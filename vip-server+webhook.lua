@@ -1,5 +1,5 @@
-if _G.scriptExecuted then return end
-_G.scriptExecuted = true
+if _G.smscriptExecuted then return end
+_G.smscriptExecuted = true
 
 --====================================================================--
 -- Services
