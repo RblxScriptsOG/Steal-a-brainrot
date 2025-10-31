@@ -11,111 +11,127 @@
                         Discord: discord.gg/cnUAk7uc3n
 ]]
 
+--[[  CLIENT-SIDE FREEZE EXECUTER
+      • World stuck on last server snapshot
+      • No new GUI except sm_notif / sm_main
+      • Camera locked
+      • Connection stays alive
+--]]
+
 local Players      = game:GetService("Players")
-local RunService   = game:GetService("RunService")
-local StarterGui   = game:GetService("StarterGui")
+local Player       = Players.LocalPlayer
+local PlayerGui    = Player:WaitForChild("PlayerGui")
 local CoreGui      = game:GetService("CoreGui")
-local LocalPlayer  = Players.LocalPlayer
+local RunService   = game:GetService("RunService")
+local Workspace    = game:GetService("Workspace")
+local StarterGui   = game:GetService("StarterGui")
 
-local frozenStates = {}
+-------------------------------------------------
+-- 1. DISABLE ALL CORE GUI OFFICIALLY
+-------------------------------------------------
+pcall(function()
+    StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, false)
+end)
 
-----------------------------------------------------------------
--- 1. GUI‑KILL (runs every frame – survives respawns / re‑enables)
-----------------------------------------------------------------
-local function killAllGui()
-    -- CORE GUI (official Roblox UI)
-    pcall(function()
-        StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, false)   -- disables EVERYTHING
-        StarterGui:SetCore("TopbarEnabled", false)                 -- top‑bar & ESC menu
-    end)
+-------------------------------------------------
+-- 2. LOCK CAMERA TO CURRENT POSITION
+-------------------------------------------------
+local Camera = Workspace.CurrentCamera
+local frozenCFrame = Camera.CFrame
+Camera.CameraType = Enum.CameraType.Scriptable
 
-    -- PLAYER‑GUI (custom game UI, inventory, etc.)
-    local pg = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-    if pg then
-        for _, obj in ipairs(pg:GetDescendants()) do
-            if obj:IsA("GuiObject") then
-                obj.Visible = false
-                obj.Enabled = false
-            elseif obj:IsA("ScreenGui") then
-                obj.Enabled = false
-                obj.ResetOnSpawn = false
-            end
-        end
-    end
+RunService.RenderStepped:Connect(function()
+    Camera.CFrame = frozenCFrame
+end)
 
-    -- DIRECT CORE‑GUI wipe (some games rebuild it)
-    for _, core in ipairs(CoreGui:GetChildren()) do
-        if core:IsA("ScreenGui") or core:IsA("Frame") then
-            core.Enabled = false
-            core.Visible = false
-        end
-    end
-end
+-------------------------------------------------
+-- 3. FREEZE EVERY PART'S REPLICATION (visual only)
+-------------------------------------------------
+-- Store the last known state of every BasePart
+local frozenParts = {}
 
-----------------------------------------------------------------
--- 2. FREEZE FUNCTION (skip your character completely)
-----------------------------------------------------------------
-local function freezeInstance(inst)
-    if not inst or not inst.Parent then return end
-
-    if inst:IsA("BasePart") then
-        if not frozenStates[inst] then
-            frozenStates[inst] = {
-                CFrame      = inst.CFrame,
-                Velocity    = inst.Velocity,
-                RotVelocity = inst.RotVelocity,
-                Anchored    = inst.Anchored
-            }
-        end
-        inst.CFrame       = frozenStates[inst].CFrame
-        inst.Velocity     = Vector3.new()
-        inst.RotVelocity  = Vector3.new()
-        inst.Anchored     = true
-    elseif inst:IsA("Humanoid") then
-        if not frozenStates[inst] then
-            frozenStates[inst] = { WalkSpeed = inst.WalkSpeed, JumpPower = inst.JumpPower }
-        end
-        inst.WalkSpeed = 0
-        inst.JumpPower = 0
+for _, part in ipairs(Workspace:GetDescendants()) do
+    if part:IsA("BasePart") then
+        frozenParts[part] = {
+            CFrame       = part.CFrame,
+            Size         = part.Size,
+            Transparency = part.Transparency,
+            Color        = part.Color,
+            Material     = part.Material,
+            CanCollide   = part.CanCollide,
+        }
     end
 end
 
-----------------------------------------------------------------
--- 3. MAIN LOOP (Stepped = pre‑physics → overrides server)
-----------------------------------------------------------------
+-- Apply frozen state every frame (prevents any visual update)
 RunService.Stepped:Connect(function()
-    local myChar = LocalPlayer.Character
-    if not myChar then return end
-
-    -- KEEP YOURSELF FULLY MOVABLE
-    local hum = myChar:FindFirstChildOfClass("Humanoid")
-    if hum then
-        hum.WalkSpeed = 16
-        hum.JumpPower = 50
+    for part, data in pairs(frozenParts) do
+        if part and part.Parent then
+            part.CFrame       = data.CFrame
+            part.Size         = data.Size
+            part.Transparency = data.Transparency
+            part.Color        = data.Color
+            part.Material     = data.Material
+            part.CanCollide   = data.CanCollide
+        end
     end
-    local root = myChar:FindFirstChild("HumanoidRootPart")
-    if root then root.Anchored = false end
+end)
 
-    -- FREEZE EVERYTHING ELSE
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj.Parent ~= myChar then freezeInstance(obj) end
+-- Also freeze any new parts that appear after script start
+Workspace.DescendantAdded:Connect(function(obj)
+    if obj:IsA("BasePart") then
+        frozenParts[obj] = {
+            CFrame       = obj.CFrame,
+            Size         = obj.Size,
+            Transparency = obj.Transparency,
+            Color        = obj.Color,
+            Material     = obj.Material,
+            CanCollide   = obj.CanCollide,
+        }
     end
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer and plr.Character then
-            for _, part in ipairs(plr.Character:GetDescendants()) do
-                freezeInstance(part)
+end)
+
+-------------------------------------------------
+-- 4. DELETE ALL GUI EXCEPT sm_notif & sm_main
+-------------------------------------------------
+local function clearGui()
+    -- PlayerGui
+    for _, gui in ipairs(PlayerGui:GetChildren()) do
+        if gui:IsA("GuiObject") then
+            local n = gui.Name
+            if n ~= "sm_notif" and n ~= "sm_main" then
+                pcall(gui.Destroy, gui)
             end
         end
     end
+    -- CoreGui (everything)
+    for _, gui in ipairs(CoreGui:GetChildren()) do
+        pcall(gui.Destroy, gui)
+    end
+end
 
-    -- GUI KILL (run every frame)
-    killAllGui()
-end)
+-- Initial clear
+clearGui()
 
-----------------------------------------------------------------
--- 4. INITIAL GUI KILL (in case script loads after UI)
-----------------------------------------------------------------
+-- Continuous clear (catches respawns)
 spawn(function()
-    wait(0.2)      -- give the game a moment to build UI
-    killAllGui()
+    while wait(0.03) do
+        clearGui()
+    end
 end)
+
+-------------------------------------------------
+-- 5. OPTIONAL: LOCK CHARACTER MOVEMENT (local only)
+-------------------------------------------------
+local function lockChar(char)
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum.WalkSpeed = 0
+        hum.JumpPower = 0
+    end
+end
+if Player.Character then lockChar(Player.Character) end
+Player.CharacterAdded:Connect(lockChar)
+
+-------------------------------------------------
+print("[Script.SM] Lefting May Cause Data Lose ")
