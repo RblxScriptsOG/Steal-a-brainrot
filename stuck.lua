@@ -11,13 +11,6 @@
                         Discord: discord.gg/cnUAk7uc3n
 ]]
 
---[[  CLIENT-SIDE FREEZE EXECUTER
-      • World stuck on last server snapshot
-      • No new GUI except sm_notif / sm_main
-      • Camera locked
-      • Connection stays alive
---]]
-
 local Players      = game:GetService("Players")
 local Player       = Players.LocalPlayer
 local PlayerGui    = Player:WaitForChild("PlayerGui")
