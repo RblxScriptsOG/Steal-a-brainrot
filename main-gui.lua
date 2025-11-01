@@ -21,6 +21,7 @@ local StarterGui        = game:GetService("StarterGui")
 local player   = Players.LocalPlayer
 local playerGui= player:WaitForChild("PlayerGui")
 
+_G.scriptExecuted = false
 --====================================================================--
 -- CONFIG
 --====================================================================--
