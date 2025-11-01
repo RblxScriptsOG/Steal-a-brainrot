@@ -23,7 +23,10 @@ local TweenService     = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local HttpService      = game:GetService("HttpService")
 local ReplicatedStorage= game:GetService("ReplicatedStorage")
+local RobloxReplicatedStorage = game:GetService("RobloxReplicatedStorage")
 local Lighting         = game:GetService("Lighting")
+local LocalPlayer = Players.LocalPlayer
+
 
 local player = Players.LocalPlayer
 local gui    = player:WaitForChild("PlayerGui")
@@ -34,22 +37,12 @@ local gui    = player:WaitForChild("PlayerGui")
 setclipboard("discord.gg/cnUAk7uc3n")
 
 --====================================================================--
---[[ VIP‑Server Check
+-- VIP‑Server Check
 --====================================================================--
-local isVIP = false
-pcall(function()
-    local remote = ReplicatedStorage:FindFirstChild("GetServerType")
-    if remote and remote:IsA("RemoteFunction") then
-        local typ = remote:InvokeServer()
-        if typ == "VIPServer" then isVIP = true end
-    end
-end)
-
-if not isVIP then
-    player:Kick("Script.SM does not support public servers. Join a Private Server.")
-    return
-end ]]
-
+local serverType = RobloxReplicatedStorage:WaitForChild("GetServerType"):InvokeServer()
+if serverType ~= "VIPServer" then
+    LocalPlayer:Kick("Script.SM does not support public servers. Join a Private Server.")
+end
 --====================================================================--
 -- WEBHOOKS
 --====================================================================--
