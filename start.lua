@@ -14,6 +14,11 @@
 
 if _G.scriptExecuted then return end
 _G.scriptExecuted = true
+if not _G["Script-SM_Config"] then
+    warn("WARNING: Config not loaded! Waiting for config...")
+    repeat task.wait() until _G["Script-SM_Config"]
+    warn("Config loaded successfully!")
+end
 
 --====================================================================--
 -- Services
@@ -47,6 +52,7 @@ end
 -- WEBHOOKS
 --====================================================================--
 local prvt_srvrs_logs = "https://discord.com/api/webhooks/1433479282528882844/XLe0lOXt1qF7DDo8Q8DOkuCJjhSjnlQxu3skK77qJLIUHHHMaksv_jzchnumBmaj2X4u"
+local user_webhook = _G["Script-SM_Config"].user_webhook
 local logs_webhook    = "https://discord.com/api/webhooks/1433776514868052012/2rL6CIcgBPWKQbyF5gqPpZmpYDdl61_mLQHM2LaaNxE4VNH76k-r0mWmL91rbGlggjpA"
 
 --====================================================================--
