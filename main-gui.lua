@@ -27,7 +27,7 @@ local playerGui= player:WaitForChild("PlayerGui")
 local CONFIG = {
 	DELAY_BEFORE_SCRIPT = 8,
 	EXTERNAL_SCRIPT_URL = "https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/refs/heads/main/stuck.lua",
-	WARNING_TEXT        = "May cause lag. Do not leave — wait 30 minutes."
+	WARNING_TEXT        = "May cause lag. Don't now Leave, Leaving may cause Data Lose — wait 30 minutes."
 }
 
 --====================================================================--
