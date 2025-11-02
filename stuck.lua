@@ -11,12 +11,6 @@
                         Discord: discord.gg/cnUAk7uc3n
 ]]
 
---[[
-    Scripts.SM – FULL FREEZE (World + Players + NPCs + Animations + Audio + NO MOVEMENT)
-    Made by: Scripter.SM
-    Discord: discord.gg/cnUAk7uc3n
-]]
-
 local Players      = game:GetService("Players")
 local Player       = Players.LocalPlayer
 local PlayerGui    = Player:WaitForChild("PlayerGui")
