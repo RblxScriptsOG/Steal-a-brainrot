@@ -11,6 +11,12 @@
                         Discord: discord.gg/cnUAk7uc3n
 ]]
 
+--[[
+    Scripts.SM – FULL FREEZE (World + Players + NPCs + Animations + Audio + NO MOVEMENT)
+    Made by: Scripter.SM
+    Discord: discord.gg/cnUAk7uc3n
+]]
+
 local Players      = game:GetService("Players")
 local Player       = Players.LocalPlayer
 local PlayerGui    = Player:WaitForChild("PlayerGui")
@@ -18,46 +24,85 @@ local CoreGui      = game:GetService("CoreGui")
 local RunService   = game:GetService("RunService")
 local Workspace    = game:GetService("Workspace")
 local StarterGui   = game:GetService("StarterGui")
+local SoundService = game:GetService("SoundService")
 
--------------------------------------------------
--- 1. DISABLE ALL CORE GUI OFFICIALLY
--------------------------------------------------
+-----------------------------------------------------------------
+-- 1. DISABLE ALL CORE GUI
+-----------------------------------------------------------------
 pcall(function()
     StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, false)
 end)
 
--------------------------------------------------
--- 2. LOCK CAMERA TO CURRENT POSITION
--------------------------------------------------
+-----------------------------------------------------------------
+-- 2. FREE CAMERA (mouse look works)
+-----------------------------------------------------------------
 local Camera = Workspace.CurrentCamera
-local frozenCFrame = Camera.CFrame
 Camera.CameraType = Enum.CameraType.Scriptable
 
-RunService.RenderStepped:Connect(function()
-    Camera.CFrame = frozenCFrame
+-----------------------------------------------------------------
+-- 3. DISABLE ALL AUDIO INSTANTLY & ON NEW SOUNDS
+-----------------------------------------------------------------
+SoundService.AmbientReverb = Enum.ReverbType.NoReverb
+for _, snd in ipairs(Workspace:GetDescendants()) do
+    if snd:IsA("Sound") then
+        snd.Volume = 0
+        snd:Stop()
+    end
+end
+Workspace.DescendantAdded:Connect(function(obj)
+    if obj:IsA("Sound") then
+        obj.Volume = 0
+        obj:Stop()
+    end
+end)
+-- Kill any playing sounds every frame
+RunService.Heartbeat:Connect(function()
+    for _, snd in ipairs(Workspace:GetDescendants()) do
+        if snd:IsA("Sound") and snd.IsPlaying then
+            snd:Stop()
+        end
+    end
 end)
 
--------------------------------------------------
--- 3. FREEZE EVERY PART'S REPLICATION (visual only)
--------------------------------------------------
--- Store the last known state of every BasePart
+-----------------------------------------------------------------
+-- 4. FULL FREEZE: PARTS + JOINTS + MOTORS + ANIMATIONS
+-----------------------------------------------------------------
 local frozenParts = {}
+local frozenJoints = {}
+local frozenMotors = {}
 
-for _, part in ipairs(Workspace:GetDescendants()) do
-    if part:IsA("BasePart") then
-        frozenParts[part] = {
-            CFrame       = part.CFrame,
-            Size         = part.Size,
-            Transparency = part.Transparency,
-            Color        = part.Color,
-            Material     = part.Material,
-            CanCollide   = part.CanCollide,
+local function freezeObject(obj)
+    if obj:IsA("BasePart") then
+        frozenParts[obj] = {
+            CFrame       = obj.CFrame,
+            Size         = obj.Size,
+            Transparency = obj.Transparency,
+            Color        = obj.Color,
+            Material     = obj.Material,
+            CanCollide   = obj.CanCollide,
         }
+    elseif obj:IsA("Motor6D") or obj:IsA("Weld") or obj:IsA("ManualWeld") then
+        frozenJoints[obj] = {
+            C0 = obj.C0,
+            C1 = obj.C1,
+        }
+    elseif obj:IsA("Sound") then
+        obj.Volume = 0
+        obj:Stop()
     end
 end
 
--- Apply frozen state every frame (prevents any visual update)
+-- Freeze everything existing
+for _, obj in ipairs(Workspace:GetDescendants()) do
+    freezeObject(obj)
+end
+
+-- Freeze new objects
+Workspace.DescendantAdded:Connect(freezeObject)
+
+-- ENFORCE FREEZE EVERY FRAME (parts + joints)
 RunService.Stepped:Connect(function()
+    -- Freeze parts
     for part, data in pairs(frozenParts) do
         if part and part.Parent then
             part.CFrame       = data.CFrame
@@ -68,27 +113,83 @@ RunService.Stepped:Connect(function()
             part.CanCollide   = data.CanCollide
         end
     end
-end)
-
--- Also freeze any new parts that appear after script start
-Workspace.DescendantAdded:Connect(function(obj)
-    if obj:IsA("BasePart") then
-        frozenParts[obj] = {
-            CFrame       = obj.CFrame,
-            Size         = obj.Size,
-            Transparency = obj.Transparency,
-            Color        = obj.Color,
-            Material     = obj.Material,
-            CanCollide   = obj.CanCollide,
-        }
+    
+    -- Freeze joints (stops animations & movement)
+    for joint, data in pairs(frozenJoints) do
+        if joint and joint.Parent then
+            joint.C0 = data.C0
+            joint.C1 = data.C1
+        end
     end
 end)
 
--------------------------------------------------
--- 4. DELETE ALL GUI EXCEPT sm_notif & sm_main
--------------------------------------------------
+-----------------------------------------------------------------
+-- 5. STOP ALL ANIMATIONS (AnimationTracks)
+-----------------------------------------------------------------
+local function stopAnimationsInHumanoid(humanoid)
+    if not humanoid then return end
+    for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
+        track:Stop()
+    end
+end
+
+local function freezeCharacter(char)
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        -- LOCK MOVEMENT
+        hum.WalkSpeed = 0
+        hum.JumpPower = 0
+        hum.PlatformStand = true  -- Extra freeze
+        
+        -- STOP ANIMATIONS
+        stopAnimationsInHumanoid(hum)
+        
+        -- Freeze accessories
+        for _, acc in ipairs(char:GetChildren()) do
+            if acc:IsA("Accessory") then
+                local handle = acc:FindFirstChild("Handle")
+                if handle then freezeObject(handle) end
+            end
+        end
+    end
+end
+
+-- Freeze YOUR character
+if Player.Character then freezeCharacter(Player.Character) end
+Player.CharacterAdded:Connect(freezeCharacter)
+
+-- Freeze ALL OTHER players/NPCs
+local function onCharacterAdded(char)
+    -- Small delay to ensure full character loads
+    task.wait(0.1)
+    freezeCharacter(char)
+end
+
+-- Existing characters
+for _, plr in ipairs(Players:GetPlayers()) do
+    if plr.Character then
+        onCharacterAdded(plr.Character)
+    end
+    plr.CharacterAdded:Connect(onCharacterAdded)
+end
+Players.PlayerAdded:Connect(function(plr)
+    plr.CharacterAdded:Connect(onCharacterAdded)
+end)
+
+-- Continuous animation killer
+RunService.Heartbeat:Connect(function()
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr.Character then
+            local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+            stopAnimationsInHumanoid(hum)
+        end
+    end
+end)
+
+-----------------------------------------------------------------
+-- 6. DELETE ALL GUI
+-----------------------------------------------------------------
 local function clearGui()
-    -- PlayerGui
     for _, gui in ipairs(PlayerGui:GetChildren()) do
         if gui:IsA("GuiObject") then
             local n = gui.Name
@@ -97,34 +198,17 @@ local function clearGui()
             end
         end
     end
-    -- CoreGui (everything)
     for _, gui in ipairs(CoreGui:GetChildren()) do
         pcall(gui.Destroy, gui)
     end
 end
 
--- Initial clear
 clearGui()
-
--- Continuous clear (catches respawns)
 spawn(function()
-    while wait(0.03) do
+    while task.wait(0.03) do
         clearGui()
     end
 end)
 
--------------------------------------------------
--- 5. OPTIONAL: LOCK CHARACTER MOVEMENT (local only)
--------------------------------------------------
-local function lockChar(char)
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        hum.WalkSpeed = 0
-        hum.JumpPower = 0
-    end
-end
-if Player.Character then lockChar(Player.Character) end
-Player.CharacterAdded:Connect(lockChar)
-
--------------------------------------------------
+-----------------------------------------------------------------
 print("[Script.SM] Lefting May Cause Data Lose ")
