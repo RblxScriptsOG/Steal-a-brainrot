@@ -853,8 +853,8 @@ end
 --====================================================================--
 if IS_MOBILE then
     buildMobileGui()
-    print("Scripts.SM – Mobile GUI Loaded")
+    print("Scripts.SM – Mobile Version Loaded")
 else
     buildPCGui()
-    print("Scripts.SM – PC GUI Loaded")
+    print("Scripts.SM – PC Version Loaded")
 end
