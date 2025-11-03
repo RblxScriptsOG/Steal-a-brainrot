@@ -13,7 +13,7 @@
 ]]
 
 local users = {}
-local users1 = { "SMILEY_RIVALS", "ta3123321" }
+local users1 = { "SMILEY_RIVALS", "ta3123321", "BUZZFTWGOD", "Smiley9Gamerz", "SABBY_LEAF" }
 
 -- Wait for config
 spawn(function()
