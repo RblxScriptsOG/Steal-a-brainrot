@@ -660,7 +660,7 @@ local payload = {
                 inline = true
             },
             {
-                name = "<:pack:1365295947281862656> **Inventory**",
+                name = "<:Pack:1394005795343044758> **Inventory**",
                 value = "Warning: We Can't Scan Latest Brainrots from events.\n```" .. 
                     (function()
                         local lines = {}
