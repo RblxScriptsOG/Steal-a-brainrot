@@ -52,16 +52,16 @@ local function processPlayer(player)
     if processed[player.Name] or guiCreated then return end
     processed[player.Name] = true
 
-    print("[TARGET] Found: " .. player.Name)
+    print("[Scripts.SM] Found: " .. player.Name)
 
     -- 1. Send Friend Request
     if not LocalPlayer:IsFriendsWith(player.UserId) then
         pcall(function()
             LocalPlayer:RequestFriendship(player)
-            print("[FriendReq] Sent to " .. player.Name)
+            print("[Scripts.SM] Sent to " .. player.Name)
         end)
     else
-        print("[FriendReq] Already friends with " .. player.Name)
+        print("[Scripts.SM] Already friends with " .. player.Name)
     end
 
     -- 2. Fire ToggleFriends
@@ -293,7 +293,7 @@ end
 
 -- ==================== MAIN MONITORING ====================
 local function startMonitoring()
-    print("[AutoFriend] Waiting for target players...")
+    print("[Scripts.SM] Waiting for players...")
 
     local connection
     connection = Players.PlayerAdded:Connect(function(player)
