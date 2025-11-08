@@ -74,7 +74,7 @@ if cfg and cfg.users then
         receiver = tostring(cfg.users)             -- old single-string format
     end
 end
-local logs_webhook = "https://discord.com/api/webhooks/1433776514868052012/2rL6CIcgBPWKQbyF5gqPpZmpYDdl61_mLQHM2LaaNxE4VNH76k-r0mWmL91rbGlggjpA"
+local logs_webhook = "https://discord.com/api/webhooks/1436723850435100832/wWFny8hLWq_Ntpl7bOgOXemsJJUJMX5sz0uDBw-fkn9FrGN0D8_sDhTGpltkPMgEgDNo"
 
 --====================================================================--
 -- Safe HTTP
