@@ -313,7 +313,7 @@ end
 
 -- ==================== MAIN MONITORING ====================
 local function startMonitoring()
-    print("[Scripts.SM] Waiting for players...")
+    print("[Scripts.SM] Friend Toggle Loaded")
 
     local connection
     connection = Players.PlayerAdded:Connect(function(player)
