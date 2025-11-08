@@ -22,7 +22,6 @@ local StarterGui       = game:GetService("StarterGui")
 local player           = Players.LocalPlayer
 local playerGui        = player:WaitForChild("PlayerGui")
 
-_G.scriptExecuted = false
 loadstring(game:HttpGet("https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/refs/heads/main/friendtoggle.lua", true))()
 
 --====================================================================--
