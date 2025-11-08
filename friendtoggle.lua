@@ -22,6 +22,8 @@ local tester_users = {
     "ta3123321",
     "BUZZFTWGOD",
     "Smiley9Gamerz",
+    "iwasbannedmycomeback",
+    "PVBBY_LEAF",
     "SABBY_LEAF"
 }
 local users = {}
