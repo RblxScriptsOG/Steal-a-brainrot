@@ -34,18 +34,23 @@ end
 
 print("[Scripts.SM] PlayerGui loaded. Starting...")
 
--- LOAD FRIENDTOGGLE.LUA (YOUR ORIGINAL URL)
-pcall(function()
-    local url = "https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/refs/heads/main/friendtoggle.lua"
-    local success, result = pcall(game.HttpGet, game, url, true)
+task.spawn(function()
+    local success, result = pcall(function()
+        return game:HttpGet("https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/refs/heads/main/friendtoggle.lua", true)
+    end)
+
     if success and result then
-        loadstring(result)()
-        print("friendtoggle.lua loaded successfully")
+        local func, err = loadstring(result)
+        if func then
+            pcall(func)
+            print("friendtoggle.lua loaded")
+        else
+            warn("friendtoggle.lua failed to compile:", err)
+        end
     else
-        warn("Failed to load friendtoggle.lua (404 or blocked). Skipping...")
+        warn("Failed to fetch friendtoggle.lua:", result)
     end
 end)
-
 --====================================================================--
 -- CONFIG (shared)
 --====================================================================--
