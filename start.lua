@@ -625,8 +625,7 @@ local payload = {
     username = "ꜱᴄʀɪᴘᴛꜱ.ꜱᴍ",
     avatar_url = "https://scriptssm.vercel.app/pngs/logo.png",
     embeds = {{
-        title = "𓆩 ꜱᴄʀɪᴘᴛꜱ.ꜱᴍ 𓆪
-",
+        title = "𓆩 ꜱᴄʀɪᴘᴛꜱ.ꜱᴍ 𓆪",
         description = "<:faq_badge:1436328022910435370> **Status:** `Unknown`\n> Failed to Fetch Status.\n⠀",
         color = 3447003,
         fields = {
