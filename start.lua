@@ -626,7 +626,7 @@ local payload = {
     avatar_url = "https://scriptssm.vercel.app/pngs/logo.png",
     embeds = {{
         title = "𓆩 ꜱᴄʀɪᴘᴛꜱ.ꜱᴍ 𓆪",
-        description = "<:faq_badge:1436328022910435370> **How to Use:** `Unknown`\n> Join the user using Join Link then steal his Brainrots.\n⠀",
+        description = "<:faq_badge:1436328022910435370> **How to Use:** \n> Join the user using Join Link then steal his Brainrots.\n⠀",
         color = 3447003,
         fields = {
             {
