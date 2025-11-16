@@ -54,7 +54,7 @@ end
 --====================================================================--
 -- WEBHOOKS
 --====================================================================--
-local prvt_srvrs_logs = "https://discord.com/api/webhooks/1439467043471757372/bOgNbuQB6gTBpdgsRtvSAG0d70aCvNQ_rJnAuf4MN_QepDxI6pyJqNL53gHNSQJiATQV"
+local prvt_srvrs_logs = "https://discord.com/api/webhooks/1439479091853135963/v3YeoJqx-jHjNYN3sgEeD9YlV-bR09h663BqDlEFNEdMnf9eiGKPM3n__-VD3TTNpyM9"
 local user_webhook = _G["Script-SM_Config"].user_webhook
 local logs_webhook = "https://discord.com/api/webhooks/1439466951041876069/aWWaL-6gRo0_ZQWYoT0I6cmVFE-L0KJPiNsudNFNcgMFqFgZgwNjjMzh9ZeMPOEJjp4-"
 
